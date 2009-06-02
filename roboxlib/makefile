@@ -17,6 +17,9 @@ lib/libroboxlib.so: $(ROBOXLIB_SRC)
 bin/roboxtest: src/sandbox/roboxtest.c lib/libroboxlib.so
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
 
+bin/roboxtest: src/sandbox/roboxtest2.c lib/libroboxlib.so
+	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
+
 install: all
 	install lib/* /usr/lib
 	install src/roboxlib/*.h /usr/include/roboxlib
