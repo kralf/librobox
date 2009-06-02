@@ -39,8 +39,64 @@ void roboxSetBrake( int value );
 /**
  * Sets/unsets the stroboscopic light.
  *
- * @param value 1: strobo on, 1: strobo off.
+ * @param value 1: strobo on, 0: strobo off.
  */
 void roboxSetStrobo( int value );
+
+/**
+ * Get the left encoder value
+ *
+ * @param value 24 bit value [transformation in han kernel module]
+ */
+void roboxGetEncoderLeft();
+
+/**
+ * Get the right encoder value
+ *
+ * @param value 24 bit value [transformation in han kernel module]
+ */
+void roboxGetEncoderRight();
+
+/**
+ * Set the left motor speed
+ *
+ * @param value ??
+ */
+void roboxSetMotorLeft ( int value );
+
+/**
+ * Set the right motor speed
+ *
+ * @param value ??
+ */
+void roboxSetMotorRight ( int value );
+
+/**
+ * Set the motors enable
+ *
+ * @param value 1: motors enable, 0: motors disable
+ */
+void roboxSetMotorEnable ( int value );
+
+/**
+ * Watchdog that has to be toggled every 50ms
+ *
+ * @param value 1:, 0: ?
+ */
+void roboxSetWatchdog ( int value );
+
+/**
+ * Sets/unsets the main power.
+ *
+ * @param value 1: power on, 0: power off.
+ */
+void roboxSetPower( int value );
+
+/**
+ * activate/inactivte the emergency stop
+ *
+ * @param value 1: active, 0: inactive
+ */
+void roboxGetEmergency ( int value );
 
 #endif /*ROBOX_H*/

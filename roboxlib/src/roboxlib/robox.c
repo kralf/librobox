@@ -14,7 +14,11 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int inputThreadRunning;
 
 static struct Bumpers bumperStatus;
-static struct Brake brakeStatus;
+static struct Brake brakeStatus; 
+static struct EncoderLeft encoderLeftStatus;
+static struct EncoderRight encoderRightStatus;
+static struct Emergency emergencyStatus;
+
 
 //------------------------------------------------------------------------------
 
@@ -70,17 +74,25 @@ void
 openHandles()
 {
   memset( &handles, sizeof( handles), 0 );
-  handles.bumpers[0] = openHandle( "/dev/robox/sensors/bumper/front", 1 );
-  handles.bumpers[1] = openHandle( "/dev/robox/sensors/bumper/leftfront", 1 );
-  handles.bumpers[2] = openHandle( "/dev/robox/sensors/bumper/left", 1 );
-  handles.bumpers[3] = openHandle( "/dev/robox/sensors/bumper/leftback", 1 );
-  handles.bumpers[4] = openHandle( "/dev/robox/sensors/bumper/back", 1 );
-  handles.bumpers[5] = openHandle( "/dev/robox/sensors/bumper/rightback", 1 );
-  handles.bumpers[6] = openHandle( "/dev/robox/sensors/bumper/right", 1 );
-  handles.bumpers[7] = openHandle( "/dev/robox/sensors/bumper/rightfront", 1 );
-  handles.brakeOut   = openHandle( "/dev/robox/drive/brake/disengage", 0 );
-  handles.brakeIn    = openHandle( "/dev/robox/drive/brake/disengaged", 1 );
-  handles.stroboOut  = openHandle( "/dev/robox/security/flashlight", 0 );
+  handles.bumpers[0]   = openHandle( "/dev/robox/sensors/bumper/front", 1 );
+  handles.bumpers[1]   = openHandle( "/dev/robox/sensors/bumper/leftfront", 1 );
+  handles.bumpers[2]   = openHandle( "/dev/robox/sensors/bumper/left", 1 );
+  handles.bumpers[3]   = openHandle( "/dev/robox/sensors/bumper/leftback", 1 );
+  handles.bumpers[4]   = openHandle( "/dev/robox/sensors/bumper/back", 1 );
+  handles.bumpers[5]   = openHandle( "/dev/robox/sensors/bumper/rightback", 1 );
+  handles.bumpers[6]   = openHandle( "/dev/robox/sensors/bumper/right", 1 );
+  handles.bumpers[7]   = openHandle( "/dev/robox/sensors/bumper/rightfront", 1 );
+  handles.brakeOut     = openHandle( "/dev/robox/drive/brake/disengage", 0 );
+  handles.brakeIn      = openHandle( "/dev/robox/drive/brake/disengaged", 1 );
+  handles.stroboOut    = openHandle( "/dev/robox/security/flashlight", 0 );
+  handles.encoderLeft  = openHandle( "/dev/robox/sensors/encoders/left", 1 );
+  handles.encoderRight = openHandle( "/dev/robox/sensors/encoders/right", 1 );
+  handles.motorsOut    = openHandle( "/dev/robox/drive/motor/enable", 0 );
+  handles.motorLeft    = openHandle( "/dev/robox/drive/motor/left", 0 );
+  handles.motorRight   = openHandle( "/dev/robox/drive/motor/right", 0 );
+  handles.watchdog     = openHandle( "/dev/robox/security/watchdog", 0 );
+  handles.powerOut     = openHandle( "/dev/robox/power/engage", 0 );
+  handles.emergencyIn  = openHandle( "/dev/robox/security/stop/emergency", 0 );
 }
 
 //------------------------------------------------------------------------------
@@ -97,10 +109,17 @@ closeHandles()
   close( handles.brakeOut );
   close( handles.brakeIn );
   close( handles.stroboOut );
+  close( handles.encoderLeft );
+  close( handles.encoderRight );
+  close( handles.motorsOut);
+  close( handles.motorLeft );
+  close( handles.motorRight );
+  close( handles.watchdog );
+  close( handles.powerOut );
+  close( handles.emergencyIn );
 }
 
 //------------------------------------------------------------------------------
-
 
 void * inputHandler( void * params )
 {
@@ -109,7 +128,16 @@ void * inputHandler( void * params )
   int inputReady;
   size_t bufferSize = 1000;
   char buffer[bufferSize];
-  inputThreadRunning = 1;
+  inputThreadRunning = 1;      if ( FD_ISSET( handles.brakeIn, &inputFiles ) ) {
+        inputReady = read( handles.brakeIn, buffer, bufferSize );
+        if ( inputReady ) {
+          pthread_mutex_lock( &mutex );
+          sscanf( buffer, "%i\n", &brakeStatus.engaged );
+          brakeStatus.engaged = ! brakeStatus.engaged;
+          brakeStatus.timestamp = timestamp();
+          pthread_mutex_unlock( &mutex );
+        }
+      }
   
   for (;;) {
     pthread_mutex_lock( &mutex );
@@ -128,6 +156,9 @@ void * inputHandler( void * params )
       FD_SET( handles.bumpers[i], &inputFiles );
     }
     FD_SET( handles.brakeIn, &inputFiles );
+    FD_SET( handles.encoderLeft, &inputFiles );
+    FD_SET( handles.encoderRight, &inputFiles );
+    FD_SET( handles.emergencyIn, &inputFiles );
     
     inputReady = select( handles.maxHandle + 1, &inputFiles, (fd_set *) NULL, (fd_set *) NULL, &timeout );
     if ( inputReady < 0 ) {
@@ -148,6 +179,16 @@ void * inputHandler( void * params )
           }
         }
       }
+      if ( FD_ISSET( handles.emergencyIn, &inputFiles ) ) {
+        inputReady = read( handles.emergencyIn, buffer, bufferSize );
+        if ( inputReady ) {
+          pthread_mutex_lock( &mutex );
+          sscanf( buffer, "%i\n", &EmergencyStatus.value );
+          EmergencyStatus.value = ! EmergencyStatus.value;
+          EmergencyStatus.timestamp = timestamp();
+          pthread_mutex_unlock( &mutex );
+        }
+      }
       if ( FD_ISSET( handles.brakeIn, &inputFiles ) ) {
         inputReady = read( handles.brakeIn, buffer, bufferSize );
         if ( inputReady ) {
@@ -158,11 +199,30 @@ void * inputHandler( void * params )
           pthread_mutex_unlock( &mutex );
         }
       }
+      if ( FD_ISSET( handles.encoderLeft, &inputFiles ) ) {
+	inputReady = read( handles.encoderLeft, buffer, bufferSize );
+	if ( inputReady ) {
+	  pthread_mutex_lock ( &mutex );
+	  sscanf( buffer, "%i\n", &encoderLeftStatus.value );
+          encoderLeftStatus.timestamp = timestamp();
+   	  pthread_mutex_unlock( &mutex );
+	}
+      }
+      if ( FD_ISSET( handles.encoderLRight, &inputFiles ) ) {
+	inputReady = read( handles.encoderRight, buffer, bufferSize );
+	if ( inputReady ) {
+	  pthread_mutex_lock ( &mutex );
+	  sscanf( buffer, "%i\n", &encoderRightStatus.value );
+          encoderRightStatus.timestamp = timestamp();
+   	  pthread_mutex_unlock( &mutex );
+	}
+      }
+
     } else {
       /*Timed out*/
     }
+    roboxSetWatchdog( 0 );
   }
-
   return NULL;
 }
 
@@ -189,6 +249,23 @@ int roboxGetBumper( int number )
 
 //------------------------------------------------------------------------------
 
+void roboxGetEncoderLeft()
+{
+  pthread_mutex_lock( &mutex );
+  int result = encoderLeftStatus.value;
+  pthread_mutex_unlock( &mutex );
+  return result;
+}
+//------------------------------------------------------------------------------
+
+void roboxGetEncoderRight()
+{
+  pthread_mutex_lock( &mutex );
+  int result = encoderRightStatus.value;
+  pthread_mutex_unlock( &mutex );
+  return result;
+}
+//------------------------------------------------------------------------------
 int roboxGetBrake()
 {
   pthread_mutex_lock( &mutex );
@@ -213,4 +290,58 @@ void roboxSetStrobo( int value )
   char s[100];
   sprintf( s, "%i\n", value );
   write( handles.stroboOut, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetMotorLeft( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.motorLeft, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetMotorsEnable( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.motorsOut, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetMotorRight( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.motorRight, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetWatchdog( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.watchdog, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetPower( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.powerOut, s, strlen( s ) );
+}
+
+//------------------------------------------------------------------------------
+
+void roboxSetEmergency( int value )
+{
+  char s[100];
+  sprintf( s, "%i\n", value );
+  write( handles.emergencyOut, s, strlen( s ) );
 }

@@ -7,6 +7,14 @@ struct FileHandles {
   int brakeOut;
   int brakeIn;
   int stroboOut;
+  int encoderLeft;
+  int encoderRight;
+  int motorsOut;
+  int motorLeft;
+  int motorRight;
+  int watchdog;
+  int powerOut;
+  int emergencyIn;
   int maxHandle;
 };
 
@@ -15,8 +23,23 @@ struct Bumpers {
   double timestamp;
 };
 
+struct EncoderLeft {
+  int value;
+  double timestamp;
+};
+
+struct EncoderRight {
+  int value;
+  double timestamp;
+};
+
 struct Brake {
   int engaged;
+  double timestamp;
+};
+
+struct Emergency {
+  int value;
   double timestamp;
 };
 
