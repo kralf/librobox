@@ -15,6 +15,7 @@ struct FileHandles {
   int watchdog;
   int powerOut;
   int emergencyIn;
+  int supervisorIn;
   int maxHandle;
 };
 
@@ -42,6 +43,12 @@ struct Emergency {
   int value;
   double timestamp;
 };
+
+struct Supervisor {
+  int value;
+  double timestamp;
+};
+
 
 int openHandle( const char * devicename, int readOnly );
 void openHandles();

@@ -48,14 +48,14 @@ void roboxSetStrobo( int value );
  *
  * @param value 24 bit value [transformation in han kernel module]
  */
-void roboxGetEncoderLeft();
+int roboxGetEncoderLeft();
 
 /**
  * Get the right encoder value
  *
  * @param value 24 bit value [transformation in han kernel module]
  */
-void roboxGetEncoderRight();
+int roboxGetEncoderRight();
 
 /**
  * Set the left motor speed
@@ -97,6 +97,13 @@ void roboxSetPower( int value );
  *
  * @param value 1: active, 0: inactive
  */
-void roboxGetEmergency ( int value );
+int roboxGetEmergency ();
+
+/**
+ * activate/inactivte supervisor
+ *
+ * @param value 1: active, 0: inactive
+ */
+int roboxGetSupervisor ();
 
 #endif /*ROBOX_H*/

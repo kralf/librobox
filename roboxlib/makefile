@@ -7,7 +7,7 @@ CC      = $(XCROOT)/bin/$(TARGET)-linux-gcc
 CFLAGS  += -Isrc
 LDFLAGS +=
 
-OBJS    = lib/libroboxlib.so bin/roboxtest
+OBJS    = lib/libroboxlib.so bin/roboxtest bin/roboxtest2
 
 all: $(OBJS) 
 
@@ -17,7 +17,7 @@ lib/libroboxlib.so: $(ROBOXLIB_SRC)
 bin/roboxtest: src/sandbox/roboxtest.c lib/libroboxlib.so
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
 
-bin/roboxtest: src/sandbox/roboxtest2.c lib/libroboxlib.so
+bin/roboxtest2: src/sandbox/roboxtest2.c lib/libroboxlib.so
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
 
 install: all

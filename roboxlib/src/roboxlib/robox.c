@@ -18,6 +18,7 @@ static struct Brake brakeStatus;
 static struct EncoderLeft encoderLeftStatus;
 static struct EncoderRight encoderRightStatus;
 static struct Emergency emergencyStatus;
+static struct Supervisor supervisorStatus;
 
 
 //------------------------------------------------------------------------------
@@ -92,7 +93,8 @@ openHandles()
   handles.motorRight   = openHandle( "/dev/robox/drive/motor/right", 0 );
   handles.watchdog     = openHandle( "/dev/robox/security/watchdog", 0 );
   handles.powerOut     = openHandle( "/dev/robox/power/engage", 0 );
-  handles.emergencyIn  = openHandle( "/dev/robox/security/stop/emergency", 0 );
+  handles.emergencyIn  = openHandle( "/dev/robox/security/stop/emergency", 1 );
+  handles.supervisorIn = openHandle( "/dev/robox/security/stop/supervisor", 1 );
 }
 
 //------------------------------------------------------------------------------
@@ -117,6 +119,7 @@ closeHandles()
   close( handles.watchdog );
   close( handles.powerOut );
   close( handles.emergencyIn );
+  close( handles.supervisorIn );
 }
 
 //------------------------------------------------------------------------------
@@ -139,6 +142,7 @@ void * inputHandler( void * params )
         }
       }
   
+  int watchdog = 0;
   for (;;) {
     pthread_mutex_lock( &mutex );
     int shouldBreak = ! inputThreadRunning;
@@ -149,9 +153,9 @@ void * inputHandler( void * params )
     }
 
     timeout.tv_sec  = 0;
-    timeout.tv_usec = 50000;
+    timeout.tv_usec = 5000;
     FD_ZERO( &inputFiles );
-    size_t i = 0;
+    /*size_t i = 0;
     for ( i = 0; i < 8; ++i ) {
       FD_SET( handles.bumpers[i], &inputFiles );
     }
@@ -159,69 +163,69 @@ void * inputHandler( void * params )
     FD_SET( handles.encoderLeft, &inputFiles );
     FD_SET( handles.encoderRight, &inputFiles );
     FD_SET( handles.emergencyIn, &inputFiles );
+    FD_SET( handles.supervisorIn, &inputFiles );*/
     
-    inputReady = select( handles.maxHandle + 1, &inputFiles, (fd_set *) NULL, (fd_set *) NULL, &timeout );
+    //inputReady = select( handles.maxHandle + 1, &inputFiles, (fd_set *) NULL, (fd_set *) NULL, &timeout );
+    inputReady = select( 0, (fd_set *) NULL, (fd_set *) NULL, (fd_set *) NULL, &timeout );
     if ( inputReady < 0 ) {
       fprintf( stderr, "Problem while getting data\n" );
       exit( 1 );
     }
     
     if ( inputReady ) {
+      /*Should never happen*/
+    } else {
       size_t i = 0;
       for ( i = 0; i < 8; ++i ) {
-        if ( FD_ISSET( handles.bumpers[i], &inputFiles ) ) {
-          inputReady = read( handles.bumpers[i], buffer, bufferSize );
-          if ( inputReady ) {
-            pthread_mutex_lock( &mutex );
-            sscanf( buffer, "%i\n", &bumperStatus.bumpers[i] );
-            bumperStatus.timestamp = timestamp();
-            pthread_mutex_unlock( &mutex );
-          }
-        }
-      }
-      if ( FD_ISSET( handles.emergencyIn, &inputFiles ) ) {
-        inputReady = read( handles.emergencyIn, buffer, bufferSize );
+        inputReady = read( handles.bumpers[i], buffer, bufferSize );
         if ( inputReady ) {
           pthread_mutex_lock( &mutex );
-          sscanf( buffer, "%i\n", &EmergencyStatus.value );
-          EmergencyStatus.value = ! EmergencyStatus.value;
-          EmergencyStatus.timestamp = timestamp();
+          sscanf( buffer, "%i\n", &bumperStatus.bumpers[i] );
+          bumperStatus.timestamp = timestamp();
           pthread_mutex_unlock( &mutex );
         }
       }
-      if ( FD_ISSET( handles.brakeIn, &inputFiles ) ) {
-        inputReady = read( handles.brakeIn, buffer, bufferSize );
-        if ( inputReady ) {
-          pthread_mutex_lock( &mutex );
-          sscanf( buffer, "%i\n", &brakeStatus.engaged );
-          brakeStatus.engaged = ! brakeStatus.engaged;
-          brakeStatus.timestamp = timestamp();
-          pthread_mutex_unlock( &mutex );
-        }
+      inputReady = read( handles.emergencyIn, buffer, bufferSize );
+      if ( inputReady ) {
+        pthread_mutex_lock( &mutex );
+        sscanf( buffer, "%i\n", &emergencyStatus.value );
+        emergencyStatus.value = ! emergencyStatus.value;
+        emergencyStatus.timestamp = timestamp();
+        pthread_mutex_unlock( &mutex );
       }
-      if ( FD_ISSET( handles.encoderLeft, &inputFiles ) ) {
-	inputReady = read( handles.encoderLeft, buffer, bufferSize );
-	if ( inputReady ) {
-	  pthread_mutex_lock ( &mutex );
-	  sscanf( buffer, "%i\n", &encoderLeftStatus.value );
-          encoderLeftStatus.timestamp = timestamp();
-   	  pthread_mutex_unlock( &mutex );
-	}
+      inputReady = read( handles.supervisorIn, buffer, bufferSize );
+      if ( inputReady ) {
+        pthread_mutex_lock( &mutex );
+        sscanf( buffer, "%i\n", &supervisorStatus.value );
+        supervisorStatus.value = ! supervisorStatus.value;
+        supervisorStatus.timestamp = timestamp();
+        pthread_mutex_unlock( &mutex );
       }
-      if ( FD_ISSET( handles.encoderLRight, &inputFiles ) ) {
-	inputReady = read( handles.encoderRight, buffer, bufferSize );
-	if ( inputReady ) {
-	  pthread_mutex_lock ( &mutex );
-	  sscanf( buffer, "%i\n", &encoderRightStatus.value );
-          encoderRightStatus.timestamp = timestamp();
-   	  pthread_mutex_unlock( &mutex );
-	}
+      inputReady = read( handles.brakeIn, buffer, bufferSize );
+      if ( inputReady ) {
+        pthread_mutex_lock( &mutex );
+        sscanf( buffer, "%i\n", &brakeStatus.engaged );
+        brakeStatus.engaged = ! brakeStatus.engaged;
+        brakeStatus.timestamp = timestamp();
+        pthread_mutex_unlock( &mutex );
       }
-
-    } else {
-      /*Timed out*/
+      inputReady = read( handles.encoderLeft, buffer, bufferSize );
+      if ( inputReady ) {
+        pthread_mutex_lock ( &mutex );
+        sscanf( buffer, "%i\n", &encoderLeftStatus.value );
+        encoderLeftStatus.timestamp = timestamp();
+        pthread_mutex_unlock( &mutex );
+      }
+      inputReady = read( handles.encoderRight, buffer, bufferSize );
+      if ( inputReady ) {
+        pthread_mutex_lock ( &mutex );
+        sscanf( buffer, "%i\n", &encoderRightStatus.value );
+        encoderRightStatus.timestamp = timestamp();
+        pthread_mutex_unlock( &mutex );
+      }
     }
-    roboxSetWatchdog( 0 );
+    roboxSetWatchdog( watchdog );
+    watchdog = !watchdog;
   }
   return NULL;
 }
@@ -249,7 +253,7 @@ int roboxGetBumper( int number )
 
 //------------------------------------------------------------------------------
 
-void roboxGetEncoderLeft()
+int roboxGetEncoderLeft()
 {
   pthread_mutex_lock( &mutex );
   int result = encoderLeftStatus.value;
@@ -258,18 +262,39 @@ void roboxGetEncoderLeft()
 }
 //------------------------------------------------------------------------------
 
-void roboxGetEncoderRight()
+int roboxGetEncoderRight()
 {
   pthread_mutex_lock( &mutex );
   int result = encoderRightStatus.value;
   pthread_mutex_unlock( &mutex );
   return result;
 }
+
 //------------------------------------------------------------------------------
 int roboxGetBrake()
 {
   pthread_mutex_lock( &mutex );
   int result = brakeStatus.engaged;
+  pthread_mutex_unlock( &mutex );
+  return result;
+}
+
+//------------------------------------------------------------------------------
+
+int roboxGetEmergency()
+{
+  pthread_mutex_lock( &mutex );
+  int result = emergencyStatus.value;
+  pthread_mutex_unlock( &mutex );
+  return result;
+}
+
+//------------------------------------------------------------------------------
+
+int roboxGetSupervisor()
+{
+  pthread_mutex_lock( &mutex );
+  int result = supervisorStatus.value;
   pthread_mutex_unlock( &mutex );
   return result;
 }
@@ -303,7 +328,7 @@ void roboxSetMotorLeft( int value )
 
 //------------------------------------------------------------------------------
 
-void roboxSetMotorsEnable( int value )
+void roboxSetMotorEnable( int value )
 {
   char s[100];
   sprintf( s, "%i\n", value );
@@ -337,11 +362,3 @@ void roboxSetPower( int value )
   write( handles.powerOut, s, strlen( s ) );
 }
 
-//------------------------------------------------------------------------------
-
-void roboxSetEmergency( int value )
-{
-  char s[100];
-  sprintf( s, "%i\n", value );
-  write( handles.emergencyOut, s, strlen( s ) );
-}
