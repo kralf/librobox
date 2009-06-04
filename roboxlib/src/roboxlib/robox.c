@@ -9,17 +9,9 @@
 #include <pthread.h>
 
 static struct FileHandles handles;
-static pthread_t inputThread;
+static pthread_t securityThread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static int inputThreadRunning;
-
-static struct Bumpers bumperStatus;
-static struct Brake brakeStatus; 
-static struct EncoderLeft encoderLeftStatus;
-static struct EncoderRight encoderRightStatus;
-static struct Emergency emergencyStatus;
-static struct Supervisor supervisorStatus;
-
+static int securityThreadRunning;
 
 //------------------------------------------------------------------------------
 
@@ -27,7 +19,12 @@ void
 roboxInit()
 {
   openHandles();
-  if ( pthread_create( &inputThread, NULL, inputHandler, (void *) NULL  ) > 0 ) {
+  roboxSetLeftVelocity( 2048 );
+  roboxSetRightVelocity( 2048 );
+  roboxSetPower( 1 );
+  roboxSetBreak( 0 );
+  roboxSetMotorEnable( 1 );
+  if ( pthread_create( &securityThread, NULL, securityHandler, (void *) NULL  ) > 0 ) {
     fprintf( stderr, "Problem creating main thread" );
     closeHandles();
     exit( 1 );
@@ -39,11 +36,16 @@ roboxInit()
 void
 roboxShutdown()
 {
+  roboxSetLeftVelocity( 2048 );
+  roboxSetRightVelocity( 2048 );
+  roboxSetPower( 0 );
+  roboxSetBreak( 1 );
+  roboxSetMotorEnable( 1 );
   void * status;
   pthread_mutex_lock( &mutex );
-  inputThreadRunning = 0;
+  securityThreadRunning = 0;
   pthread_mutex_unlock( &mutex );
-  pthread_join( inputThread, &status );
+  pthread_join( securityThread, &status );
   closeHandles();
 }
 
@@ -124,28 +126,18 @@ closeHandles()
 
 //------------------------------------------------------------------------------
 
-void * inputHandler( void * params )
+void * securityHandler( void * params )
 {
   fd_set inputFiles;
   struct timeval timeout;
   int inputReady;
   size_t bufferSize = 1000;
   char buffer[bufferSize];
-  inputThreadRunning = 1;      if ( FD_ISSET( handles.brakeIn, &inputFiles ) ) {
-        inputReady = read( handles.brakeIn, buffer, bufferSize );
-        if ( inputReady ) {
-          pthread_mutex_lock( &mutex );
-          sscanf( buffer, "%i\n", &brakeStatus.engaged );
-          brakeStatus.engaged = ! brakeStatus.engaged;
-          brakeStatus.timestamp = timestamp();
-          pthread_mutex_unlock( &mutex );
-        }
-      }
-  
+  securityThreadRunning = 1;      
   int watchdog = 0;
   for (;;) {
     pthread_mutex_lock( &mutex );
-    int shouldBreak = ! inputThreadRunning;
+    int shouldBreak = ! securityThreadRunning;
     pthread_mutex_unlock( &mutex );
     
     if ( shouldBreak ) {
@@ -155,74 +147,10 @@ void * inputHandler( void * params )
     timeout.tv_sec  = 0;
     timeout.tv_usec = 5000;
     FD_ZERO( &inputFiles );
-    /*size_t i = 0;
-    for ( i = 0; i < 8; ++i ) {
-      FD_SET( handles.bumpers[i], &inputFiles );
-    }
-    FD_SET( handles.brakeIn, &inputFiles );
-    FD_SET( handles.encoderLeft, &inputFiles );
-    FD_SET( handles.encoderRight, &inputFiles );
-    FD_SET( handles.emergencyIn, &inputFiles );
-    FD_SET( handles.supervisorIn, &inputFiles );*/
-    
-    //inputReady = select( handles.maxHandle + 1, &inputFiles, (fd_set *) NULL, (fd_set *) NULL, &timeout );
     inputReady = select( 0, (fd_set *) NULL, (fd_set *) NULL, (fd_set *) NULL, &timeout );
     if ( inputReady < 0 ) {
       fprintf( stderr, "Problem while getting data\n" );
       exit( 1 );
-    }
-    
-    if ( inputReady ) {
-      /*Should never happen*/
-    } else {
-      size_t i = 0;
-      for ( i = 0; i < 8; ++i ) {
-        inputReady = read( handles.bumpers[i], buffer, bufferSize );
-        if ( inputReady ) {
-          pthread_mutex_lock( &mutex );
-          sscanf( buffer, "%i\n", &bumperStatus.bumpers[i] );
-          bumperStatus.timestamp = timestamp();
-          pthread_mutex_unlock( &mutex );
-        }
-      }
-      inputReady = read( handles.emergencyIn, buffer, bufferSize );
-      if ( inputReady ) {
-        pthread_mutex_lock( &mutex );
-        sscanf( buffer, "%i\n", &emergencyStatus.value );
-        emergencyStatus.value = ! emergencyStatus.value;
-        emergencyStatus.timestamp = timestamp();
-        pthread_mutex_unlock( &mutex );
-      }
-      inputReady = read( handles.supervisorIn, buffer, bufferSize );
-      if ( inputReady ) {
-        pthread_mutex_lock( &mutex );
-        sscanf( buffer, "%i\n", &supervisorStatus.value );
-        supervisorStatus.value = ! supervisorStatus.value;
-        supervisorStatus.timestamp = timestamp();
-        pthread_mutex_unlock( &mutex );
-      }
-      inputReady = read( handles.brakeIn, buffer, bufferSize );
-      if ( inputReady ) {
-        pthread_mutex_lock( &mutex );
-        sscanf( buffer, "%i\n", &brakeStatus.engaged );
-        brakeStatus.engaged = ! brakeStatus.engaged;
-        brakeStatus.timestamp = timestamp();
-        pthread_mutex_unlock( &mutex );
-      }
-      inputReady = read( handles.encoderLeft, buffer, bufferSize );
-      if ( inputReady ) {
-        pthread_mutex_lock ( &mutex );
-        sscanf( buffer, "%i\n", &encoderLeftStatus.value );
-        encoderLeftStatus.timestamp = timestamp();
-        pthread_mutex_unlock( &mutex );
-      }
-      inputReady = read( handles.encoderRight, buffer, bufferSize );
-      if ( inputReady ) {
-        pthread_mutex_lock ( &mutex );
-        sscanf( buffer, "%i\n", &encoderRightStatus.value );
-        encoderRightStatus.timestamp = timestamp();
-        pthread_mutex_unlock( &mutex );
-      }
     }
     roboxSetWatchdog( watchdog );
     watchdog = !watchdog;
@@ -245,37 +173,57 @@ timestamp()
 
 int roboxGetBumper( int number )
 {
-  pthread_mutex_lock( &mutex );
-  int result = bumperStatus.bumpers[number];
-  pthread_mutex_unlock( &mutex );
-  return result;
+  size_t bufferSize = 100;
+  char buffer[buffersize] buffer;
+  int value = 0;
+  int inputReady = read( handles.bumpers[i], buffer, bufferSize );
+  if ( inputReady ) {
+    sscanf( buffer, "%i\n", value );
+  }
+  return value;
 }
 
 //------------------------------------------------------------------------------
 
 int roboxGetEncoderLeft()
 {
-  pthread_mutex_lock( &mutex );
-  int result = encoderLeftStatus.value;
-  pthread_mutex_unlock( &mutex );
+  //TODO
+  inputReady = read( handles.encoderLeft, buffer, bufferSize );
+  if ( inputReady ) {
+    pthread_mutex_lock ( &mutex );
+    sscanf( buffer, "%i\n", &encoderLeftStatus.value );
+          encoderLeftStatus.timestamp = timestamp();
+      pthread_mutex_unlock( &mutex );
+  }
   return result;
 }
 //------------------------------------------------------------------------------
 
 int roboxGetEncoderRight()
 {
-  pthread_mutex_lock( &mutex );
-  int result = encoderRightStatus.value;
-  pthread_mutex_unlock( &mutex );
+  //TODO
+  inputReady = read( handles.encoderRight, buffer, bufferSize );
+  if ( inputReady ) {
+    pthread_mutex_lock ( &mutex );
+    sscanf( buffer, "%i\n", &encoderRightStatus.value );
+          encoderRightStatus.timestamp = timestamp();
+      pthread_mutex_unlock( &mutex );
+  }
   return result;
 }
 
 //------------------------------------------------------------------------------
 int roboxGetBrake()
 {
-  pthread_mutex_lock( &mutex );
-  int result = brakeStatus.engaged;
-  pthread_mutex_unlock( &mutex );
+  //TODO
+  inputReady = read( handles.brakeIn, buffer, bufferSize );
+  if ( inputReady ) {
+    pthread_mutex_lock( &mutex );
+    sscanf( buffer, "%i\n", &brakeStatus.engaged );
+    brakeStatus.engaged = ! brakeStatus.engaged;
+    brakeStatus.timestamp = timestamp();
+    pthread_mutex_unlock( &mutex );
+  }
   return result;
 }
 
@@ -283,9 +231,14 @@ int roboxGetBrake()
 
 int roboxGetEmergency()
 {
-  pthread_mutex_lock( &mutex );
-  int result = emergencyStatus.value;
-  pthread_mutex_unlock( &mutex );
+  //TODO
+  inputReady = read( handles.encoderRight, buffer, bufferSize );
+  if ( inputReady ) {
+    pthread_mutex_lock ( &mutex );
+    sscanf( buffer, "%i\n", &encoderRightStatus.value );
+          encoderRightStatus.timestamp = timestamp();
+      pthread_mutex_unlock( &mutex );
+  }
   return result;
 }
 
@@ -293,9 +246,14 @@ int roboxGetEmergency()
 
 int roboxGetSupervisor()
 {
-  pthread_mutex_lock( &mutex );
-  int result = supervisorStatus.value;
-  pthread_mutex_unlock( &mutex );
+  //TODO
+  inputReady = read( handles.encoderRight, buffer, bufferSize );
+  if ( inputReady ) {
+    pthread_mutex_lock ( &mutex );
+    sscanf( buffer, "%i\n", &encoderRightStatus.value );
+          encoderRightStatus.timestamp = timestamp();
+      pthread_mutex_unlock( &mutex );
+  }
   return result;
 }
 
@@ -361,4 +319,3 @@ void roboxSetPower( int value )
   sprintf( s, "%i\n", value );
   write( handles.powerOut, s, strlen( s ) );
 }
-
