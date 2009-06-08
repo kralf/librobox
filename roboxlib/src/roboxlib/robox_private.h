@@ -22,7 +22,7 @@ struct FileHandles {
 int openHandle( const char * devicename, int readOnly );
 void openHandles();
 void closeHandles();
-void * inputHandler( void * params );
+void * securityHandler( void * params );
 double timestamp();
 
 

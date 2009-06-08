@@ -4,21 +4,28 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
+
+int quit = 0;
+
+void signaled(int signal) {
+  quit = 1;
+}
 
 int main( int argc, char * argv[] ) 
 {
    roboxInit();
+
+   signal(SIGINT, signaled);
+
    int value = 0;
-   for (;;){
+   while (!quit) {
     fprintf( stderr, "EncoderLeft %i", roboxGetEncoderLeft() );
     fprintf( stderr, "EncoderRight %i", roboxGetEncoderRight() );
     fprintf( stderr, "\r" );
-    roboxSetBrake( 0 );
-    roboxSetMotorEnable( 1 );
-    roboxSetStrobo( 1 );
-    roboxSetPower( 1 );
-   
+    //roboxSetStrobo( 1 );
 
+  
     roboxSetMotorLeft( value );
     roboxSetMotorRight( value );
     //value++;
@@ -28,11 +35,9 @@ int main( int argc, char * argv[] )
     }
     sleep( 1 );
   }
-  roboxSetMotorLeft( 0 );
-  roboxSetMotorRight( 0 );
-  roboxSetStrobo( 0 );
-  roboxSetBrake ( 0 );
+
   roboxShutdown();
+
   return 0;
 }
 
