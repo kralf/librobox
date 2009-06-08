@@ -1,5 +1,3 @@
-#include "robox.h"
-#include "robox_private.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -7,6 +5,9 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <pthread.h>
+
+#include "robox.h"
+#include "robox_private.h"
 
 static struct FileHandles handles;
 static pthread_t securityThread;
@@ -22,12 +23,11 @@ roboxInit()
   roboxSetMotorLeft( 2048 );
   roboxSetMotorRight( 2048 );
   roboxSetPower( 1 );
-  usleep(1000000);
   roboxSetBrake( 0 );
-  usleep(1000000);
+  roboxSetWatchdog( 0 );
   roboxSetMotorEnable( 1 );
-  usleep(1000000);
-  if ( pthread_create( &securityThread, NULL, securityHandler, (void *) NULL  ) > 0 ) {
+
+  if ( pthread_create( &securityThread, NULL, securityHandler, (void *) NULL ) > 0 ) {
     fprintf( stderr, "Problem creating main thread" );
     closeHandles();
     exit( 1 );
@@ -43,16 +43,17 @@ roboxShutdown()
   roboxSetMotorRight( 2048 );
   roboxSetMotorEnable( 0 );
   roboxSetPower( 0 );
-  usleep(1000000);
   roboxSetBrake( 1 );
-  usleep(1000000);
-  roboxSetStrobo( 0 );
-  usleep(1000000);
+
   void * status;
   pthread_mutex_lock( &mutex );
   securityThreadRunning = 0;
   pthread_mutex_unlock( &mutex );
   pthread_join( securityThread, &status );
+
+  roboxSetWatchdog( 0 );
+  roboxSetStrobo( 0 );
+
   closeHandles();
 }
 
@@ -161,6 +162,18 @@ void * securityHandler( void * params )
     watchdog = !watchdog;
     roboxSetWatchdog( watchdog );
     //fprintf( stderr, "watchdog: %i\n", watchdog );
+
+    int value = 1900;
+    if ( !roboxGetEmergency() ) {
+      roboxSetStrobo( 0 );
+      roboxSetMotorLeft( value );
+      roboxSetMotorRight( value );
+    }
+    else {
+      roboxSetMotorLeft( 2048 );
+      roboxSetMotorRight( 2048 );
+      roboxSetStrobo( 1 );
+    }
   }
   return NULL;
 }

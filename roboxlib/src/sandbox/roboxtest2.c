@@ -14,30 +14,19 @@ void signaled(int signal) {
 
 int main( int argc, char * argv[] ) 
 {
-   roboxInit();
+  roboxInit();
 
-   signal(SIGINT, signaled);
+  signal(SIGINT, signaled);
 
-   int value = 0;
-   while (!quit) {
-    fprintf( stderr, "EncoderLeft %i", roboxGetEncoderLeft() );
-    fprintf( stderr, "EncoderRight %i", roboxGetEncoderRight() );
-    fprintf( stderr, "\r" );
-    //roboxSetStrobo( 1 );
-
-  
-    roboxSetMotorLeft( value );
-    roboxSetMotorRight( value );
-    //value++;
-    if ( roboxGetEmergency() ) {//|| roboxGetSupervisor() ) {
-      printf( "\n" );
-      break;
-    }
-    sleep( 1 );
+  while (!quit) {
+    fprintf( stderr, "\rEncoder left %10i right %10i", 
+      roboxGetEncoderLeft(), roboxGetEncoderRight() );
+    usleep( 10000 );
   }
-
+  printf( "\n" );
+  
   roboxShutdown();
-
+  
   return 0;
 }
 
