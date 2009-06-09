@@ -17,6 +17,7 @@ struct FileHandles {
   int emergencyIn;
   int supervisorIn;
   int maxHandle;
+  int odometry;
 };
 
 int openHandle( const char * devicename, int readOnly );

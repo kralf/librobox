@@ -106,4 +106,12 @@ int roboxGetEmergency ();
  */
 int roboxGetSupervisor ();
 
+/**
+ * get the values of the odometry
+ *
+ *
+ */
+
+int roboxGetOdometry ( double* x, double* y, double* theta );
+
 #endif /*ROBOX_H*/

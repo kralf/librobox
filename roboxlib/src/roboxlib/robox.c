@@ -9,10 +9,22 @@
 #include "robox.h"
 #include "robox_private.h"
 
+
+#include <math.h>
+
+
 static struct FileHandles handles;
 static pthread_t securityThread;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int securityThreadRunning;
+static int radius_r = 90;
+static int radius_l = 90;
+static int wheelbase = 545;
+static double cov_matrix[3][3];
+static double x;
+static double y;
+static double theta;
+
 
 //------------------------------------------------------------------------------
 
@@ -163,11 +175,10 @@ void * securityHandler( void * params )
     roboxSetWatchdog( watchdog );
     //fprintf( stderr, "watchdog: %i\n", watchdog );
 
-    int value = 1900;
     if ( !roboxGetEmergency() ) {
+      
+
       roboxSetStrobo( 0 );
-      roboxSetMotorLeft( value );
-      roboxSetMotorRight( value );
     }
     else {
       roboxSetMotorLeft( 2048 );
@@ -179,6 +190,7 @@ void * securityHandler( void * params )
 }
 
 //------------------------------------------------------------------------------
+
 
 double
 timestamp()
@@ -269,6 +281,198 @@ int roboxGetSupervisor()
     sscanf( buffer, "%i\n", &value );
   }
   return value;
+}
+
+//------------------------------------------------------------------------------
+
+#define LIMIT 0x00ffffff
+#define WIN   LIMIT/4
+int hal_encoder_delta( value0, value1 )
+{
+  
+  if( value0>LIMIT-WIN && value1<WIN ) {
+    return LIMIT-value0 + value1;
+  }
+  else if ( value0<WIN && value1>LIMIT-WIN ) {
+    return  -( LIMIT-value1 + value0 );
+  }
+  else {
+    return value1 - value0;
+  }
+}
+
+//------------------------------------------------------------------------------
+
+double hal_encoder_to_rad( value )
+{
+  return value/(4.0*500.0*50.0)*2.0*M_PI;
+}
+
+//------------------------------------------------------------------------------
+
+int roboxGetOdometry ( double* x, double* y, double* theta )
+{
+   typedef struct {
+     double radius_r;
+     double radius_l;
+     double wheelbase;
+     double k_r;
+     double k_l;
+   } parameters;
+
+
+typedef struct {
+
+int prev_e0; /* old encoder value */
+int prev_e1; /* old encoder value */
+
+} private_t;
+
+static private_t private;
+
+static void hal_odometry_task(int arg)
+{
+  double dalpha_l, dalpha_r;
+  int e0, e1;
+
+  init_values();
+  private.prev_e0 = roboxGetEncoderLeft();
+  private.prev_e1 = roboxGetEncoderRight();
+
+  for(;;) {
+    
+    e0 = roboxGetEncoderLeft();
+    e1 = roboxGetEncoderRight();
+
+    
+    dalpha_r = hal_encoder_delta(private.prev_e0,e0);
+    dalpha_r = hal_encoder_delta(private.prev_e1,e1);
+    dalpha_l = HAL_ENCODER_TO_RAD(dalpha_l);
+    dalpha_r = HAL_ENCODER_TO_RAD(dalpha_r);
+    
+    /* store old values */
+    private.prev_e0 = e0;
+    private.prev_e1 = e1;
+
+    /* update */
+    //hal_odometry_update(param,dalpha_l,dalpha_r);
+  }
+
+}
+
+//struct hal_odometry_data_s
+static int hal_odometry_update(parameters param,
+			       double dalpha_l, double dalpha_r)
+{
+  
+  double drho_r;
+  double drho_l;
+  double drho;
+  double dtheta;
+  double beta;
+
+  double q_r;
+  double q_l;
+  
+  double sin_beta;
+  double cos_beta;
+  double x_cs_p;
+  double x_cs_m;
+  double x_sc_p;
+  double x_sc_m;
+  
+  double sigma_xx;
+  double sigma_xy;
+  double sigma_xt;
+  double sigma_yy;
+  double sigma_yt;
+  double sigma_tt;
+
+  double drho_sin_beta;
+  double drho_cos_beta;
+  
+  sigma_xx = cov_matrix[0][0];
+  sigma_xy = cov_matrix[0][1];
+  sigma_xt = cov_matrix[0][2];
+  sigma_yy = cov_matrix[1][1];
+  sigma_yt = cov_matrix[1][2];
+  sigma_tt = cov_matrix[2][2];
+
+
+  drho_r = param.radius_r * dalpha_r;
+  drho_l = param.radius_l * dalpha_l;
+  
+  q_r = param.k_r * fabs(drho_r);
+  q_l = param.k_l * fabs(drho_l);
+
+  drho   = 0.5 * (drho_r + drho_l);
+
+  dtheta = (drho_r - drho_l)/param.wheelbase;
+  
+  beta = theta + dtheta*0.5;
+
+  sin_beta = sin(beta);
+  cos_beta = cos(beta);
+  
+  drho_sin_beta = drho * sin_beta;
+  drho_cos_beta = drho * cos_beta;
+
+  x_cs_p = 0.5 * (cos_beta + sin_beta*drho/param.wheelbase);
+  x_cs_m = 0.5 * (cos_beta - sin_beta*drho/param.wheelbase);
+  x_sc_p = 0.5 * (sin_beta + cos_beta*drho/param.wheelbase);
+  x_sc_m = 0.5 * (sin_beta - cos_beta*drho/param.wheelbase);
+
+  
+    cov_matrix[0][0] = sigma_xx - 2*drho_sin_beta*sigma_xt + pow(drho_sin_beta,2)*sigma_tt
+      + q_r*pow(x_cs_m,2) + q_l*pow(x_cs_p,2);
+
+    cov_matrix[0][1] = sigma_xy - drho_sin_beta*sigma_yt + drho_cos_beta*sigma_xt 
+      - drho_cos_beta*drho_sin_beta*sigma_tt 
+      + q_r*x_cs_m*x_sc_p + q_l*x_cs_p*x_sc_m;  
+
+    cov_matrix[0][2] = sigma_xt - drho_sin_beta*sigma_tt
+      + q_r*x_cs_m/param.wheelbase - q_l*x_cs_p/param.wheelbase;
+
+    cov_matrix[1][0] = cov_matrix[0][1];
+
+    cov_matrix[1][1] = sigma_yy + 2*drho_cos_beta*sigma_yt + pow(drho_cos_beta,2)*sigma_tt
+      + q_r*pow(x_sc_p,2) + q_l*pow(x_sc_m,2);
+
+    cov_matrix[1][2] = sigma_yt + drho_cos_beta*sigma_tt 
+      + q_r*x_sc_p/param.wheelbase - q_l*x_sc_m/param.wheelbase;
+
+    cov_matrix[2][0] = cov_matrix[0][2];
+
+    cov_matrix[2][1] = cov_matrix[1][2];
+
+    cov_matrix[2][2] = sigma_tt 
+      + (q_r + q_l)/pow(param.wheelbase,2);
+  
+    x += drho * cos(beta);
+    y += drho * sin(beta);
+    theta = modulo_2pi(theta + dtheta); 
+
+  
+    return 0;
+  }
+
+
+  double modulo_2pi(double theta)
+  {
+  
+    while(theta >= 2*M_PI)
+      theta -= 2*M_PI;
+  
+    while(theta < 0)
+      theta += 2*M_PI;
+  
+    return theta;
+
+  }
+
+   *x = cov_matrix[0][0];
+   *y = cov_matrix[1][1];
+   *theta = cov_matrix[2][2];
 }
 
 //------------------------------------------------------------------------------
