@@ -36,7 +36,7 @@ int main( int argc, char * argv[] )
  	  dSl = roboxGetEncoderLeft();
 	  dSr = roboxGetEncoderRight();
 
-	   int ContStep (int sTime, int rConst, int oPose, int gPose, int nPose, int K, int dSl, int dSr, int *nOmega, int*nPolar, int*dt) {
+	   int ContStep (int sTime, int rConst, int oPose, int gPose, int nPose, int K, int dSl, int dSr, int* nOmega, int* nPolar, int* dt) {
     	  // run ContStep with Omega1,2 and o,g,n-Pose , outputting Omega1,2, oPose
                        
           }

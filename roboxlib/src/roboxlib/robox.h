@@ -107,11 +107,35 @@ int roboxGetEmergency ();
 int roboxGetSupervisor ();
 
 /**
+ * set initialized odometry values
+ *
+ *
+ */
+
+void roboxInitOdometry ();
+
+/**
  * get the values of the odometry
  *
  *
  */
 
 int roboxGetOdometry ( double* x, double* y, double* theta );
+
+/**
+ * set initialized speed values
+ *
+ *
+ */
+
+void roboxInitSpeed ();
+
+/**
+ * set motor speed 
+ *
+ * using a PID controller
+ */
+
+void roboxSetSpeed ( int wheel, double speed_target );
 
 #endif /*ROBOX_H*/

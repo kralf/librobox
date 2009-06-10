@@ -18,6 +18,7 @@ struct FileHandles {
   int supervisorIn;
   int maxHandle;
   int odometry;
+  int speedOut;
 };
 
 int openHandle( const char * devicename, int readOnly );
