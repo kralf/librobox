@@ -53,19 +53,18 @@ roboxInit()
 void
 roboxShutdown()
 {
-  roboxSetMotorLeft( 2048 );
-  roboxSetMotorRight( 2048 );
-  roboxSetMotorEnable( 0 );
-  roboxSetPower( 0 );
-  roboxSetBrake( 1 );
-
   void * status;
   pthread_mutex_lock( &mutex );
   securityThreadRunning = 0;
   pthread_mutex_unlock( &mutex );
   pthread_join( securityThread, &status );
 
+  roboxSetMotorLeft( 2048 );
+  roboxSetMotorRight( 2048 );
   roboxSetWatchdog( 0 );
+  roboxSetMotorEnable( 0 );
+  roboxSetBrake( 1 );
+  roboxSetPower( 0 );
   roboxSetStrobo( 0 );
 
   closeHandles();
@@ -178,8 +177,6 @@ void * securityHandler( void * params )
     //fprintf( stderr, "watchdog: %i\n", watchdog );
 
     if ( !roboxGetEmergency() ) {
-      roboxSetSpeed(0, 0.1);
-
       roboxSetStrobo( 0 );
     }
     else {
@@ -455,12 +452,13 @@ int roboxGetOdometry ( double* x, double* y, double* theta )
 //------------------------------------------------------------------------------
 
 #define NWHEELS 2
-#define SPEED_P      10.0
-#define SPEED_I      0.5
-#define SPEED_D      -1.0 
-#define SPEED_ILIMIT 1.0
+#define SPEED_P      2.9
+#define SPEED_I      0.7
+#define SPEED_D      -1.2
+#define SPEED_ILIMIT 2.0
 
 typedef struct {
+  double stime;
 
   /* pid parameters */
   double p;
@@ -472,12 +470,10 @@ typedef struct {
   double current[NWHEELS]; /* current speed [rad/s] */
   double target[NWHEELS];  /* desired speed [rad/s] */
   
-  int aovalue[NWHEELS];    /* analog out value */
+  double aovalue[NWHEELS];    /* analog out value */
   int pcounter[NWHEELS];   /* previous encoder value */
+  double ptime[NWHEELS];   /* last timestamp */
   
-  int tmp[NWHEELS];
-  unsigned int dtime[NWHEELS];
-
   /* values kept for DEBUG */
   int current_i[NWHEELS];  /* integer value of current speed */
   int target_i[NWHEELS];   /* integer value of target speed */
@@ -492,23 +488,28 @@ static speed_private spd;
 void roboxInitSpeed()
 {
   int i;
-  
+  struct timeval tv;
+
+  gettimeofday(&tv, 0);
+  spd.stime = tv.tv_sec+tv.tv_usec*1e-6;  
+
   for(i=0; i < 2; i++) {
     spd.target[i]   = 0.0;
     spd.current[i]   = 0.0;
-    spd.pcounter[0] = roboxGetEncoderRight();
-    spd.pcounter[1] = roboxGetEncoderLeft();
-    
+    spd.pcounter[i] = (i == 0) ? roboxGetEncoderLeft() : 
+      roboxGetEncoderRight();
+    spd.ptime[i] = 0.0;   
+
     spd.aovalue[i] = 2048;
   }
   //private.from_user.speed_l = 0.0;
   //private.from_user.speed_r = 0.0;
 
   /* PID parameters */
-  spd.p      = 6; //SPEED_P;
-  spd.i      = 1.5; //SPEED_I;
-  spd.d      = 1; //SPEED_D;
-  spd.ilimit = 1; //SPEED_ILIMIT;
+  spd.p      = SPEED_P;
+  spd.i      = SPEED_I;
+  spd.d      = SPEED_D;
+  spd.ilimit = SPEED_ILIMIT;
   spd.integ[i] = 0; //what is integ ??
 }
 
@@ -518,22 +519,35 @@ void roboxInitSpeed()
  * on one wheel */
 void roboxSetSpeed( int wheel, double speed_target )
 {
-  double target = speed_target;
+  double target = speed_target, ptime, dtime = 0.0;
   int i = wheel;
-  double delta_speed, accel, speed, integ, correction;
-  int counter[NWHEELS];
+  double delta_speed, accel = 0.0, speed = 0.0, integ, correction;
+  int counter;
+  struct timeval tv;
 
-  counter[0] = roboxGetEncoderRight();
-  counter[1] = roboxGetEncoderLeft();
-  spd.dencoders[i]= hal_encoder_delta(spd.pcounter[i],counter[i]);
-  //private.dencoders[2]= hal_encoder_delta(private.pcounter[2],counter[2]);
-  spd.pcounter[i] = counter[i];
+  counter = (i == 1) ? roboxGetEncoderLeft() : roboxGetEncoderRight();
+  spd.dencoders[i] = hal_encoder_delta(spd.pcounter[i], counter);
+  spd.dencoders[i] = (i == 1) ? spd.dencoders[i] : -spd.dencoders[i];
+  spd.pcounter[i] = counter;
   //private.pcounter[2] = counter[2];
 
-  speed = hal_encoder_to_rad(spd.dencoders[i]) / 0.01; //pro 100 sec
-  accel = (speed - spd.current[i]) / 0.01; //pro 100 sec
+  gettimeofday(&tv, 0);
+  ptime = tv.tv_sec+tv.tv_usec*1e-6;
+  if (spd.ptime[i] > 0.0)
+    dtime = ptime-spd.ptime[i];
+  spd.ptime[i] = ptime;
+
+  if (dtime > 0.0) {
+    speed = hal_encoder_to_rad(spd.dencoders[i]) / dtime;
+    accel = (speed - spd.current[i]) / dtime;
+  }
   spd.current[i] = speed;
-      
+
+  //printf("%lf -- %6d %6d -- %6.2f %6.2f\n", dtime,
+    //spd.dencoders[0], spd.dencoders[1],
+    //hal_encoder_to_rad(spd.dencoders[0]) / dtime, 
+    //hal_encoder_to_rad(spd.dencoders[1]) / dtime);  
+       
       
   /* compute PID and correction */
   //delta_speed = spd.target[i] - spd.current[i];
@@ -546,7 +560,7 @@ void roboxSetSpeed( int wheel, double speed_target )
 
   /* apply correction to current analog out value */
   spd.correction[i] = correction;
-  spd.aovalue[i] = spd.aovalue[i] + correction;
+  spd.aovalue[i] = (i == 1) ? spd.aovalue[i] - correction : spd.aovalue[i] + correction;
 
 
   /* XXX aovalue is passed as an unsigned int to hal_motor_set_channel(),
@@ -570,11 +584,13 @@ void roboxSetSpeed( int wheel, double speed_target )
 
   /* set actuators */
   
-  if (!roboxGetEmergency()) {
-//    if (i==0) roboxSetMotorRight( spd.aovalue[0] );
-//    else roboxSetMotorLeft( spd.aovalue[1] );
-    printf("%d %d\n", spd.aovalue[0], spd.aovalue[1]);  
-  }
+  if (i == 0) 
+    roboxSetMotorLeft( spd.aovalue[0] );
+  else 
+    roboxSetMotorRight( spd.aovalue[1] );
+
+  fprintf(stdout, "%lf   %8.4f  %8.4f  %8.4f\n", ptime-spd.stime, speed, delta_speed, correction);
+  fprintf(stderr, "%d %d\n", (int)spd.aovalue[0], (int)spd.aovalue[1]);  
 
   return;
 }

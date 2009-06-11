@@ -7,7 +7,7 @@ CC      = $(XCROOT)/bin/$(TARGET)-linux-gcc
 CFLAGS  += -Isrc
 LDFLAGS += 
 
-OBJS    = lib/libroboxlib.so bin/roboxtest bin/roboxtest2 bin/roboxtestspeed \
+OBJS    = lib/libroboxlib.so bin/roboxtestInit bin/roboxtestOdometry bin/roboxtestspeed \
 				  bin/serialtest bin/lasertest
 
 all: $(OBJS) 
@@ -24,11 +24,11 @@ bin/lasertest: src/sandbox/lasertest.c
 	mkdir -p bin
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lpthread -o $@
 
-bin/roboxtest: src/sandbox/roboxtest.c lib/libroboxlib.so
+bin/roboxtestInit: src/sandbox/roboxtestInit.c lib/libroboxlib.so
 	mkdir -p bin
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
 
-bin/roboxtest2: src/sandbox/roboxtest2.c lib/libroboxlib.so
+bin/roboxtestOdometry: src/sandbox/roboxtestOdometry.c lib/libroboxlib.so
 	mkdir -p bin
 	$(CC) $< $(CFLAGS) -Wall -Wl,-rpath,../lib:lib -Llib -lroboxlib -l pthread -o $@
 
