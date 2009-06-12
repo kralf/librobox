@@ -25,12 +25,6 @@
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
-
-/** \brief Predefined RoboX constants
-  */
-#define ROBOX_MODEL_ROBOX           0
-#define ROBOX_MODEL_BIBA            1
-
-#define ROBOX_READ_TIMEOUT          0.05
+#define clip(a, b, c) max(min(a, c), b)
 
 #endif

@@ -23,6 +23,19 @@
 
 #include "device.h"
 
+/** \brief Predefined RoboX power constants
+  */
+#define ROBOX_POWER_READ_TIMEOUT               0.01
+
+/** \brief Predefined RoboX power error codes
+  */
+#define ROBOX_POWER_ERROR_NONE                 0
+#define ROBOX_POWER_ERROR_UP                   1
+
+/** \brief Predefined RoboX power error descriptions
+  */
+extern const char* robox_power_errors[];
+
 /** \brief Structure defining the RoboX power module
   */
 typedef struct robox_power_t {
@@ -46,6 +59,19 @@ int robox_power_init(
   * \return The resulting device error code.
   */
 int robox_power_destroy(
+  robox_power_p power);
+
+/** \brief Switch on power
+  * \param[in] power The power module to be switched on.
+  * \return The resulting error code.
+  */
+int robox_power_up(
+  robox_power_p power);
+
+/** \brief Switch off power
+  * \param[in] power The power module to be switched off.
+  */
+void robox_power_down(
   robox_power_p power);
 
 #endif

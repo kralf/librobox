@@ -21,9 +21,23 @@
 #ifndef ROBOX_SECURITY_H
 #define ROBOX_SECURITY_H
 
-#include <thread.h>
+#include "bumper.h"
 
-#include "device.h"
+/** \brief Predefined RoboX security constants
+  */
+#define ROBOX_SECURITY_READ_TIMEOUT               0.01
+
+/** \brief Predefined RoboX security error codes
+  */
+#define ROBOX_SECURITY_ERROR_NONE                 0
+#define ROBOX_SECURITY_ERROR_START                1
+#define ROBOX_SECURITY_ERROR_ESTOP                2
+#define ROBOX_SECURITY_ERROR_SUPERVISOR           3
+#define ROBOX_SECURITY_ERROR_BUMPER_STATE         4
+
+/** \brief Predefined RoboX security error descriptions
+  */
+extern const char* robox_security_errors[];
 
 /** \brief Structure defining the RoboX security module
   */
@@ -32,8 +46,6 @@ typedef struct robox_security_t {
   robox_device_t sstop_dev;         //!< The supervisor stop device.
   robox_device_t watchdog_dev;      //!< The watchdog device.
   robox_device_t flashlight_dev;    //!< The flashlight device.
-
-  thread_t thread;                  //!< The security thread.
 
   int watchdog;                     //!< The current watchdog value.
 } robox_security_t, *robox_security_p;
@@ -60,21 +72,29 @@ int robox_security_init(
 int robox_security_destroy(
   robox_security_p security);
 
-/** \brief Start RoboX security thread
-  * \param[in] security The initialized RoboX security module to start the
-  *   security thread for.
-  * \param[in] frequency The security thread cycle frequency in [Hz].
-  * \return The resulting thread error code.
+/** \brief Start security module
+  * \param[in] security The security module to be started.
+  * \return The resulting error code.
   */
 int robox_security_start(
-  robox_security_p security,
-  double frequency);
-
-/** \brief Terminate RoboX security thread
-  * \param[in] security The RoboX security module to terminate the
-  *   security thread for.
-  */
-void robox_security_exit(
   robox_security_p security);
+
+/** \brief Stop security module
+  * \param[in] security The security module to be stopped.
+  */
+void robox_security_stop(
+  robox_security_p security);
+
+/** \brief Perform security check
+  * \note This check has to be performed regularly in order to satisfy
+  *   the robot's hardware watchdog conditions.
+  * \param[in] security The security module to be checked.
+  * \param[in] bumper The bumper module to be checked for insecure 
+  *   bumper states.
+  * \return The resulting error code.
+  */
+int robox_security_check(
+  robox_security_p security,
+  robox_bumper_p bumper);
 
 #endif

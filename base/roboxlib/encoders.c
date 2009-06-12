@@ -18,44 +18,25 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "power.h"
+#include "encoders.h"
 
-const char* robox_power_errors[] = {
-  "success",
-  "error switching on power",
-};
-
-int robox_power_init(robox_power_p power, const char* engage_dev, const char* 
-  battery_dev) {
+int robox_encoders_init(robox_encoders_p encoders, const char* right_dev,
+  const char* left_dev) {
   int result;
 
-  if (!(result = robox_device_open(&power->engage_dev, engage_dev, 
-      robox_device_output, ROBOX_POWER_READ_TIMEOUT)))
-    return robox_device_open(&power->battery_dev, battery_dev, 
-      robox_device_input, ROBOX_POWER_READ_TIMEOUT);
+  if (!(result = robox_device_open(&encoders->right_dev, right_dev, 
+      robox_device_input, ROBOX_ENCODERS_READ_TIMEOUT)))
+    return robox_device_open(&encoders->left_dev, left_dev, 
+      robox_device_input, ROBOX_ENCODERS_READ_TIMEOUT);                                        
   else
     return result;
 }
 
-int robox_power_destroy(robox_power_p power) {
+int robox_encoders_destroy(robox_encoders_p encoders) {
   int result;
 
-  if (!(result = robox_device_close(&power->engage_dev)))
-    return robox_device_close(&power->battery_dev);
+  if (!(result = robox_device_close(&encoders->right_dev)))
+    return robox_device_close(&encoders->left_dev);
   else
     return result;
-}
-
-int robox_power_up(robox_power_p power) {
-  int battery_val;
-
-  if (!robox_device_read(&power->battery_dev, &battery_val) &&
-    !robox_device_write(&power->engage_dev, 1))
-    return ROBOX_POWER_ERROR_NONE;
-  else
-    return ROBOX_POWER_ERROR_UP;
-}
-
-void robox_power_down(robox_power_p power) {
-  robox_device_write(&power->engage_dev, 0);
 }

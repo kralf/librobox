@@ -18,58 +18,38 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef ROBOX_BUMPER_H
-#define ROBOX_BUMPER_H
+#ifndef ROBOX_SENSORS_H
+#define ROBOX_SENSORS_H
 
 #include "device.h"
 
-/** \brief Predefined RoboX bumper constants
+/** \brief Predefined RoboX sensor constants
   */
-#define ROBOX_BUMPER_READ_TIMEOUT               0.01
+#define ROBOX_SENSORS_READ_TIMEOUT               0.01
 
-/** \brief Bumper state enumeratable type
+/** \brief Structure defining the RoboX encoders
   */
-typedef enum {
-  robox_bumper_released = 0,    //!< Bumper released.
-  robox_bumper_pressed = 1,     //!< Bumper pressed.
-} robox_bumper_state_t;
+typedef struct robox_sensors_t {
+  robox_device_t check_dev;     //!< The sensor check device.
+  robox_device_t ok_dev;        //!< The sensor okay device.
+} robox_sensors_t, *robox_sensors_p;
 
-/** \brief Structure defining the RoboX bumper
-  */
-typedef struct robox_bumper_t {
-  robox_device_p segment_devs;     //!< The bumper segment devices.
-  ssize_t num_segments;            //!< The number of bumper segments.
-} robox_bumper_t, *robox_bumper_p;
-
-/** \brief Initialize RoboX bumper
-  * \param[in] bumper The RoboX bumper to be initialized.
-  * \param[in] dev_dir The name of the RoboX bumper device directory.
+/** \brief Initialize RoboX sensors
+  * \param[in] sensors The RoboX sensors to be initialized.
+  * \param[in] check_dev The name of the sensor check device.
+  * \param[in] ok_dev The name of the sensor okay device.
   * \return The resulting device error code.
   */
-int robox_bumper_init(
-  robox_bumper_p bumper,
-  const char* dev_dir);
+int robox_sensors_init(
+  robox_sensors_p sensors,
+  const char* check_dev,
+  const char* ok_dev);
 
-/** \brief Destroy RoboX bumper
-  * \param[in] bumper The initialized RoboX bumper to be destroyed.
+/** \brief Destroy RoboX sensors
+  * \param[in] sensors The initialized RoboX sensors to be destroyed.
   * \return The resulting device error code.
   */
-int robox_bumper_destroy(
-  robox_bumper_p bumper);
-
-/** \brief Retrieve bumper state
-  * \param[in] bumper The bumper to retrieve the state for.
-  * \return The retrieved bumper state.
-  */
-robox_bumper_state_t robox_bumper_get_state(
-  robox_bumper_p bumper);
-
-/** \brief Retrieve bumper segment states
-  * \param[in] bumper The bumper to retrieve the segment states for.
-  * \return The resulting device error code.
-  */
-int robox_bumper_get_segment_states(
-  robox_bumper_p bumper,
-  robox_bumper_state_t segment_states[]);
+int robox_sensors_destroy(
+  robox_sensors_p sensors);
 
 #endif

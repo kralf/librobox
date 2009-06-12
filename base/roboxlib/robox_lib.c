@@ -27,47 +27,30 @@ int robox_model;
 
 double robox_control_freq;
 
-char* robox_power_engage_dev;
-char* robox_power_battery_dev;
-
 char* robox_security_estop_dev;
 char* robox_security_sstop_dev;
 char* robox_security_watchdog_dev;
 char* robox_security_flashlight_dev;
+char* robox_power_engage_dev;
+char* robox_power_battery_dev;
+char* robox_sensors_check_dev;
+char* robox_sensors_ok_dev;
+char* robox_encoder_right_dev;
+char* robox_encoder_left_dev;
+char* robox_bumper_dev_dir;
+char* robox_brake_disengage_dev;
+char* robox_brake_disengaged_dev;
+char* robox_motor_enable_dev;
+char* robox_motor_right_dev;
+char* robox_motor_left_dev;
 
-char* robox_bumper_right_dev;
-char* robox_bumper_rightback_dev;
-char* robox_bumper_back_dev;
-char* robox_bumper_leftback_dev;
-char* robox_bumper_left_dev;
-char* robox_bumper_leftfront_dev;
-char* robox_bumper_front_dev;
-char* robox_bumper_rightfront_dev;
-
-// char* robox_brake_disengage_dev;
-// char* robox_brake_disengaged_dev;
-// char* robox_motor_right_dev;
-// char* robox_motor_left_dev;
-// char* robox_motor_enable_dev;
-// char* robox_sensors_check_dev;
-// char* robox_sensors_ok_dev;
-// char* robox_encoder_right_dev;
-// char* robox_encoder_left_dev;
-
-robox_power_t robox_power;
-robox_security_t robox_security;
-robox_bumper_t robox_bumper;
+robox_robot_t robox_robot;
 
 int robox_read_parameters(int argc, char **argv) {
   int num_params;
   carmen_param_t robox_params[] = {
     {"robox", "control_freq", CARMEN_PARAM_DOUBLE, 
       &robox_control_freq, 0, NULL},
-
-    {"robox", "power_engage_dev", CARMEN_PARAM_STRING, 
-      &robox_power_engage_dev, 0, NULL},
-    {"robox", "power_battery_dev", CARMEN_PARAM_STRING, 
-      &robox_power_battery_dev, 0, NULL},
 
     {"robox", "security_estop_dev", CARMEN_PARAM_STRING, 
       &robox_security_estop_dev, 0, NULL},
@@ -77,23 +60,30 @@ int robox_read_parameters(int argc, char **argv) {
       &robox_security_watchdog_dev, 0, NULL},
     {"robox", "security_flashlight_dev", CARMEN_PARAM_STRING, 
       &robox_security_flashlight_dev, 0, NULL},
-
-    {"robox", "bumper_right_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_right_dev, 0, NULL},
-    {"robox", "bumper_rightback_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_rightback_dev, 0, NULL},
-    {"robox", "bumper_back_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_back_dev, 0, NULL},
-    {"robox", "bumper_leftback_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_leftback_dev, 0, NULL},
-    {"robox", "bumper_left_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_left_dev, 0, NULL},
-    {"robox", "bumper_leftfront_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_leftfront_dev, 0, NULL},
-    {"robox", "bumper_front_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_front_dev, 0, NULL},
-    {"robox", "bumper_rightfront_dev", CARMEN_PARAM_STRING, 
-      &robox_bumper_rightfront_dev, 0, NULL},
+    {"robox", "power_engage_dev", CARMEN_PARAM_STRING, 
+      &robox_power_engage_dev, 0, NULL},
+    {"robox", "power_battery_dev", CARMEN_PARAM_STRING, 
+      &robox_power_battery_dev, 0, NULL},
+    {"robox", "sensors_check_dev", CARMEN_PARAM_STRING, 
+      &robox_sensors_check_dev, 0, NULL},
+    {"robox", "sensors_ok_dev", CARMEN_PARAM_STRING, 
+      &robox_sensors_ok_dev, 0, NULL},
+    {"robox", "encoder_right_dev", CARMEN_PARAM_STRING, 
+      &robox_encoder_right_dev, 0, NULL},
+    {"robox", "encoder_left_dev", CARMEN_PARAM_STRING, 
+      &robox_encoder_left_dev, 0, NULL},
+    {"robox", "bumper_dev_dir", CARMEN_PARAM_STRING, 
+      &robox_bumper_dev_dir, 0, NULL},
+    {"robox", "brake_disengage_dev", CARMEN_PARAM_STRING, 
+      &robox_brake_disengage_dev, 0, NULL},
+    {"robox", "brake_disengaged_dev", CARMEN_PARAM_STRING, 
+      &robox_brake_disengaged_dev, 0, NULL},
+    {"robox", "motor_enable_dev", CARMEN_PARAM_STRING, 
+      &robox_motor_enable_dev, 0, NULL},
+    {"robox", "motor_right_dev", CARMEN_PARAM_STRING, 
+      &robox_motor_right_dev, 0, NULL},
+    {"robox", "motor_left_dev", CARMEN_PARAM_STRING, 
+      &robox_motor_left_dev, 0, NULL},
   };
 
   num_params = sizeof(robox_params)/sizeof(carmen_param_t);
@@ -117,39 +107,72 @@ int carmen_base_direct_reset(void) {
 
 int carmen_base_direct_initialize_robot(char *model, char *dev __attribute__ 
   ((unused))) {
-  robox_model = -1;
-  if (!carmen_strcasecmp(model, "robox"))
-    robox_model = ROBOX_MODEL_ROBOX;
-  else if (!carmen_strcasecmp(model, "biba"))
-    robox_model = ROBOX_MODEL_BIBA;
-
-  if (robox_model == -1) {
-    carmen_warn("%s Unknown RoboX model %s:\nAcceptable models are\n"
-    "ROBOX and BIBA%s\n", carmen_red_code, model, carmen_normal_code);
-    return -1;
-  }
-
   char* argv[1] = {"robox"};
-  if (!robox_read_parameters(1, argv) ||
-    robox_power_init(&robox_power, robox_power_engage_dev,
-      robox_power_battery_dev) ||
-    robox_security_init(&robox_security, robox_security_estop_dev,
-      robox_security_sstop_dev, robox_security_watchdog_dev, 
-      robox_security_flashlight_dev) ||
-    robox_security_start(&robox_security, robox_control_freq))
+
+  if (robox_read_parameters(1, argv) > 0) {
+    config_t config;
+    config_init(&config);
+    
+    if (!carmen_strcasecmp(model, "robox"))
+      config_set_int(&config, ROBOX_PARAMETER_MODEL, robox_model_robox);
+    else if (!carmen_strcasecmp(model, "biba"))
+      config_set_int(&config, ROBOX_PARAMETER_MODEL, robox_model_biba);
+    else {
+      carmen_warn("%s Unknown RoboX model %s:\nAccepted models are\n"
+        "ROBOX and BIBA%s\n", carmen_red_code, model, carmen_normal_code);
+      return -1;
+    }
+
+    config_set_string(&config, ROBOX_PARAMETER_SECURITY_ESTOP_DEV, 
+      robox_security_estop_dev);
+    config_set_string(&config, ROBOX_PARAMETER_SECURITY_SSTOP_DEV, 
+      robox_security_sstop_dev);
+    config_set_string(&config, ROBOX_PARAMETER_SECURITY_WATCHDOG_DEV, 
+      robox_security_watchdog_dev);
+    config_set_string(&config, ROBOX_PARAMETER_SECURITY_FLASHLIGHT_DEV, 
+      robox_security_flashlight_dev);
+    config_set_string(&config, ROBOX_PARAMETER_POWER_ENGAGE_DEV, 
+      robox_power_engage_dev);
+    config_set_string(&config, ROBOX_PARAMETER_POWER_BATTERY_DEV, 
+      robox_power_battery_dev);
+    config_set_string(&config, ROBOX_PARAMETER_SENSORS_CHECK_DEV, 
+      robox_sensors_check_dev);
+    config_set_string(&config, ROBOX_PARAMETER_SENSORS_OK_DEV, 
+      robox_sensors_ok_dev);
+    config_set_string(&config, ROBOX_PARAMETER_ENCODER_RIGHT_DEV, 
+      robox_encoder_right_dev);
+    config_set_string(&config, ROBOX_PARAMETER_ENCODER_LEFT_DEV, 
+      robox_encoder_left_dev);
+    config_set_string(&config, ROBOX_PARAMETER_BUMPER_DEV_DIR, 
+      robox_bumper_dev_dir);
+    config_set_string(&config, ROBOX_PARAMETER_BRAKE_DISENGAGE_DEV, 
+      robox_brake_disengage_dev);
+    config_set_string(&config, ROBOX_PARAMETER_BRAKE_DISENGAGED_DEV, 
+      robox_brake_disengaged_dev);
+    config_set_string(&config, ROBOX_PARAMETER_MOTOR_ENABLE_DEV, 
+      robox_motor_enable_dev);
+    config_set_string(&config, ROBOX_PARAMETER_MOTOR_RIGHT_DEV, 
+      robox_motor_right_dev);
+    config_set_string(&config, ROBOX_PARAMETER_MOTOR_LEFT_DEV, 
+      robox_motor_left_dev);
+
+    if (robox_init(&robox_robot, &config) ||
+      robox_start(&robox_robot, robox_control_freq))
+      return -1;
+  }
+  else
     return -1;
-  
+
   return 0;
 }
 
 int carmen_base_direct_shutdown_robot(void) {
-  robox_security_exit(&robox_security);
-
-  if (robox_security_destroy(&robox_security) ||
-    robox_power_destroy(&robox_power))
+  if (!robox_stop(&robox_robot)) {
+    robox_destroy(&robox_robot);
+    return 0;
+  }
+  else
     return -1;
-
-  return 0;
 }
 
 int carmen_base_direct_set_acceleration(double acceleration) {
@@ -215,7 +238,9 @@ int carmen_base_direct_get_bumpers(unsigned char *state, int num_bumpers) {
     return 8;
 
   int i;
-  num_bumpers = min(num_bumpers, 8);
+  if (num_bumpers > 8) 
+    num_bumpers = 8;
+
   for (i = 0; i < num_bumpers; i++)
     state[i] = 0;
 

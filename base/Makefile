@@ -4,8 +4,8 @@ SUBDIRS =
 
 ifeq ($(ROBOT_TYPES),robox) 
 	SUBDIRS += robox
-	LFLAGS += -L../../posix/timer -ltimer -L../../posix/thread -lthread \
-		 -Lroboxlib -lrobox
+	LFLAGS += -L../../posix/config -lconfig -L../../posix/timer -ltimer \
+		-L../../posix/thread -lthread -Lroboxlib -lrobox
 endif
 
 CFLAGS += 
@@ -26,6 +26,8 @@ PUBLIC_BINARIES += $(ROBOT_TYPES)
 
 # mains for each robot
 robox: base_main.o roboxlib/librobox.a
+
+.PHONY: roboxlib/librobox.a
 
 # libraries for each robot
 roboxlib/librobox.a: 

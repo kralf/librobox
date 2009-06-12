@@ -48,7 +48,7 @@ int robox_device_open(robox_device_p dev, const char* name, robox_device_type_t
     dev->num_written = 0;
   }
   else {
-    printf("error opening %s\n", name);
+    fprintf(stderr, "error opening device %s\n", name);
     return ROBOX_DEVICE_ERROR_OPEN;
   }
 
