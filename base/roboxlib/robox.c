@@ -23,10 +23,13 @@
 
 #include "robox.h"
 
+#include "global.h"
+
 const char* robox_errors[] = {
   "success",
   "error initializing robot",
   "error starting robot",
+  "error resetting robot",
 };
 
 void* robox_run(void* arg);
@@ -51,6 +54,12 @@ param_t robox_default_params[] = {
   {ROBOX_PARAMETER_MOTOR_ENABLE_DEV, "/dev/robox/drive/motor/enable"},
   {ROBOX_PARAMETER_MOTOR_RIGHT_DEV, "/dev/robox/drive/motor/right"},
   {ROBOX_PARAMETER_MOTOR_LEFT_DEV, "/dev/robox/drive/motor/left"},
+
+  {ROBOX_PARAMETER_ENCODER_PULSES, "500"},
+  {ROBOX_PARAMETER_GEAR_TRANSMISSION, "50.0"},
+  {ROBOX_PARAMETER_WHEEL_BASE, "0.545"},
+  {ROBOX_PARAMETER_WHEEL_RIGHT_RADIUS, "0.09"},
+  {ROBOX_PARAMETER_WHEEL_LEFT_RADIUS, "0.09"},
 };
  
 config_t robox_default_config = {
@@ -59,12 +68,16 @@ config_t robox_default_config = {
 };
 
 int robox_init(robox_robot_p robot, config_p config) {
+  thread_mutex_init(&robot->mutex);
   config_init_default(&robot->config, &robox_default_config);
   if (config)
     config_set(&robot->config, config);
 
   robot->model = config_get_int(&robot->config, ROBOX_PARAMETER_MODEL);
+
   robot->security_error = ROBOX_SECURITY_ERROR_NONE;
+  memset(&robot->pose, 0, sizeof(robox_pose_t));
+  memset(&robot->velocity, 0, sizeof(robox_velocity_t));
 
   if (!robox_security_init(&robot->security, 
       config_get_string(&robot->config, ROBOX_PARAMETER_SECURITY_ESTOP_DEV),
@@ -80,7 +93,8 @@ int robox_init(robox_robot_p robot, config_p config) {
       config_get_string(&robot->config, ROBOX_PARAMETER_SENSORS_OK_DEV)) &&
     !robox_encoders_init(&robot->encoders, 
       config_get_string(&robot->config, ROBOX_PARAMETER_ENCODER_LEFT_DEV),
-      config_get_string(&robot->config, ROBOX_PARAMETER_ENCODER_RIGHT_DEV)) &&
+      config_get_string(&robot->config, ROBOX_PARAMETER_ENCODER_RIGHT_DEV),
+      config_get_int(&robot->config, ROBOX_PARAMETER_ENCODER_PULSES)) &&
     !robox_bumper_init(&robot->bumper, 
       config_get_string(&robot->config, ROBOX_PARAMETER_BUMPER_DEV_DIR)) &&
     !robox_drive_init(&robot->drive, 
@@ -88,13 +102,21 @@ int robox_init(robox_robot_p robot, config_p config) {
       config_get_string(&robot->config, ROBOX_PARAMETER_BRAKE_DISENGAGED_DEV),
       config_get_string(&robot->config, ROBOX_PARAMETER_MOTOR_ENABLE_DEV),
       config_get_string(&robot->config, ROBOX_PARAMETER_MOTOR_RIGHT_DEV),
-      config_get_string(&robot->config, ROBOX_PARAMETER_MOTOR_LEFT_DEV)))
+      config_get_string(&robot->config, ROBOX_PARAMETER_MOTOR_LEFT_DEV),
+      config_get_float(&robot->config, ROBOX_PARAMETER_GEAR_TRANSMISSION),
+      config_get_float(&robot->config, ROBOX_PARAMETER_WHEEL_BASE),
+      config_get_float(&robot->config, ROBOX_PARAMETER_WHEEL_RIGHT_RADIUS),
+      config_get_float(&robot->config, ROBOX_PARAMETER_WHEEL_LEFT_RADIUS))) {
+    robox_odometry_init(&robot->odometry, &robot->encoders, &robot->drive);
     return ROBOX_ERROR_NONE;
+  }
   else
     return ROBOX_ERROR_INIT;
 }
 
 void robox_destroy(robox_robot_p robot) {
+  robox_odometry_destroy(&robot->odometry);
+
   robox_drive_destroy(&robot->drive);
   robox_bumper_destroy(&robot->bumper);
   robox_encoders_destroy(&robot->encoders);
@@ -103,12 +125,14 @@ void robox_destroy(robox_robot_p robot) {
   robox_security_destroy(&robot->security);
 
   config_destroy(&robot->config);
+  thread_mutex_destroy(&robot->mutex);
 }
 
 int robox_start(robox_robot_p robot, double frequency) {
   if (!robox_power_up(&robot->power) &&
     !robox_security_start(&robot->security) &&
     !robox_drive_start(&robot->drive) &&
+    !robox_odometry_start(&robot->odometry) &&
     !thread_start(&robot->thread, robox_run, robox_cleanup, robot, frequency))
     return ROBOX_ERROR_NONE;
   else
@@ -120,9 +144,36 @@ int robox_stop(robox_robot_p robot) {
   return ROBOX_ERROR_NONE;
 }
 
+int robox_reset(robox_robot_p robot) {
+  int result = ROBOX_ERROR_RESET;
+
+  thread_mutex_lock(&robot->mutex);
+
+  if (!robox_odometry_start(&robot->odometry)) {
+    memset(&robot->pose, 0, sizeof(robox_pose_t));
+    result = ROBOX_ERROR_NONE;
+  }  
+
+  thread_mutex_unlock(&robot->mutex);
+
+  return result;
+}
+
+void robox_get_state(robox_robot_p robot, robox_pose_p pose, robox_velocity_p 
+  velocity) {
+  thread_mutex_lock(&robot->mutex);
+
+  *pose = robot->pose;
+  *velocity = robot->velocity;
+
+  thread_mutex_unlock(&robot->mutex);
+}
+
 void* robox_run(void* arg) {
   int security_error;
   robox_robot_p robot = arg;
+
+  thread_mutex_lock(&robot->mutex);
 
   if (!(security_error = robox_security_check(&robot->security, 
     &robot->bumper))) {
@@ -133,6 +184,11 @@ void* robox_run(void* arg) {
     robox_drive_stop(&robot->drive);
 
   robot->security_error = security_error;
+  robox_odometry_integrate(&robot->odometry, &robot->pose, 
+    &robot->velocity);
+
+  thread_mutex_unlock(&robot->mutex);
+
   return 0;
 }
 

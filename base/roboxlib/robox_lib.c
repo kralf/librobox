@@ -44,6 +44,12 @@ char* robox_motor_enable_dev;
 char* robox_motor_right_dev;
 char* robox_motor_left_dev;
 
+int robox_encoder_pulses;
+double robox_gear_trans;
+double robox_wheel_base;
+double robox_wheel_right_radius;
+double robox_wheel_left_radius;
+
 robox_robot_t robox_robot;
 
 int robox_read_parameters(int argc, char **argv) {
@@ -84,6 +90,17 @@ int robox_read_parameters(int argc, char **argv) {
       &robox_motor_right_dev, 0, NULL},
     {"robox", "motor_left_dev", CARMEN_PARAM_STRING, 
       &robox_motor_left_dev, 0, NULL},
+
+    {"robox", "encoder_pulses", CARMEN_PARAM_INT, 
+      &robox_encoder_pulses, 0, NULL},
+    {"robox", "gear_trans", CARMEN_PARAM_DOUBLE, 
+      &robox_gear_trans, 0, NULL},
+    {"robox", "wheel_base", CARMEN_PARAM_DOUBLE, 
+      &robox_wheel_base, 0, NULL},
+    {"robox", "wheel_right_radius", CARMEN_PARAM_DOUBLE, 
+      &robox_wheel_right_radius, 0, NULL},
+    {"robox", "wheel_left_radius", CARMEN_PARAM_DOUBLE, 
+      &robox_wheel_left_radius, 0, NULL},
   };
 
   num_params = sizeof(robox_params)/sizeof(carmen_param_t);
@@ -102,7 +119,10 @@ int carmen_base_direct_sonar_off(void) {
 }
 
 int carmen_base_direct_reset(void) {
-  return 0;
+  if (!robox_reset(&robox_robot))
+    return 0;
+  else
+    return -1;
 }
 
 int carmen_base_direct_initialize_robot(char *model, char *dev __attribute__ 
@@ -156,6 +176,17 @@ int carmen_base_direct_initialize_robot(char *model, char *dev __attribute__
     config_set_string(&config, ROBOX_PARAMETER_MOTOR_LEFT_DEV, 
       robox_motor_left_dev);
 
+    config_set_int(&config, ROBOX_PARAMETER_ENCODER_PULSES, 
+      robox_encoder_pulses);
+    config_set_float(&config, ROBOX_PARAMETER_GEAR_TRANSMISSION, 
+      robox_gear_trans);
+    config_set_float(&config, ROBOX_PARAMETER_WHEEL_BASE, 
+      robox_wheel_base);
+    config_set_float(&config, ROBOX_PARAMETER_WHEEL_RIGHT_RADIUS, 
+      robox_wheel_right_radius);
+    config_set_float(&config, ROBOX_PARAMETER_WHEEL_LEFT_RADIUS, 
+      robox_wheel_left_radius);
+
     if (robox_init(&robox_robot, &config) ||
       robox_start(&robox_robot, robox_control_freq))
       return -1;
@@ -175,13 +206,13 @@ int carmen_base_direct_shutdown_robot(void) {
     return -1;
 }
 
-int carmen_base_direct_set_acceleration(double acceleration) {
-  acceleration = 0.0;
+int carmen_base_direct_set_acceleration(double acceleration __attribute__ 
+  ((unused))) {
   return 0;
 }
 
-int carmen_base_direct_set_deceleration(double deceleration) {
-  deceleration = 0.0;
+int carmen_base_direct_set_deceleration(double deceleration __attribute__ 
+  ((unused))) {
   return 0;
 }
 
@@ -192,31 +223,61 @@ int carmen_base_direct_set_velocity(double tv, double rv) {
   return 0;
 }
 
-int carmen_base_direct_update_status(double* update_timestamp) {
-  if (update_timestamp)
-    *update_timestamp = 0.0;
-
+int carmen_base_direct_update_status(double* update_timestamp __attribute__ 
+  ((unused))) {
   return 0;
 }
 
 int carmen_base_direct_get_state(double *displacement, double *rotation,
   double *tv, double *rv) {
-  if (displacement)
-    *displacement = 0.0;
-  if (rotation)
-    *rotation = 0.0;
+  static robox_pose_t prev_pose;
+  static int initialized = 0;
+
+  robox_pose_t pose;
+  robox_velocity_t velocity;
+
+  robox_get_state(&robox_robot, &pose, &velocity);
+
+  if (initialized) {
+    if (displacement)
+      *displacement = (velocity.translational < 0.0) ?
+        -hypot(pose.x-prev_pose.x, pose.y-prev_pose.y) :
+        hypot(pose.x-prev_pose.x, pose.y-prev_pose.y);
+    if (rotation)
+      *rotation = pose.theta-prev_pose.theta;
+  }
+  else
+    initialized = 1;
+
   if (tv)
-    *tv = 0.0;
+    *tv = velocity.translational;
   if (rv)
-    *rv = 0.0;
+    *rv = velocity.rotational;
+
+  prev_pose = pose;
 
   return 0;
 }
 
-int carmen_base_direct_get_integrated_state(double *x __attribute__ ((unused)), 
-  double *y __attribute__ ((unused)), double *theta __attribute__ ((unused)), 
-  double *tv __attribute__ ((unused)), double *rv __attribute__ ((unused))) {
-  carmen_warn("%s not supported by robox.\n", __FUNCTION__);
+int carmen_base_direct_get_integrated_state(double *x, double *y, double 
+  *theta, double *tv, double *rv) {
+  robox_pose_t pose;
+  robox_velocity_t velocity;
+
+  robox_get_state(&robox_robot, &pose, &velocity);
+
+  if (x)
+    *x = pose.x;
+  if (y)
+    *y = pose.y;
+  if (theta)
+    *theta = pose.theta;
+
+  if (tv)
+    *tv = velocity.translational;
+  if (rv)
+    *rv = velocity.rotational;
+
   return 0;
 }
 
@@ -235,14 +296,16 @@ int carmen_base_direct_get_binary_data(unsigned char **data, int *size) {
 
 int carmen_base_direct_get_bumpers(unsigned char *state, int num_bumpers) {
   if (!state || !num_bumpers)
-    return 8;
+    return robox_robot.bumper.num_segments;
 
   int i;
-  if (num_bumpers > 8) 
-    num_bumpers = 8;
+  if (robox_robot.bumper.num_segments > 8) 
+    robox_robot.bumper.num_segments = 8;
 
-  for (i = 0; i < num_bumpers; i++)
-    state[i] = 0;
+  robox_bumper_state_t segment_states[robox_robot.bumper.num_segments];
+  robox_bumper_get_segment_states(&robox_robot.bumper, segment_states);
+  for (i = 0; i < robox_robot.bumper.num_segments; i++)
+    state[i] = (segment_states[i] == robox_bumper_released) ? 0 : 1;
 
   return num_bumpers;
 }

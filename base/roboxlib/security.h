@@ -35,10 +35,6 @@
 #define ROBOX_SECURITY_ERROR_SUPERVISOR           3
 #define ROBOX_SECURITY_ERROR_BUMPER_STATE         4
 
-/** \brief Predefined RoboX security error descriptions
-  */
-extern const char* robox_security_errors[];
-
 /** \brief Structure defining the RoboX security module
   */
 typedef struct robox_security_t {
@@ -49,6 +45,10 @@ typedef struct robox_security_t {
 
   int watchdog;                     //!< The current watchdog value.
 } robox_security_t, *robox_security_p;
+
+/** \brief Predefined RoboX security error descriptions
+  */
+extern const char* robox_security_errors[];
 
 /** \brief Initialize RoboX security module
   * \param[in] security The RoboX security module to be initialized.

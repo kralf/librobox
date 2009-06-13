@@ -20,9 +20,13 @@
 
 #include "encoders.h"
 
+#include "global.h"
+
 int robox_encoders_init(robox_encoders_p encoders, const char* right_dev,
-  const char* left_dev) {
+  const char* left_dev, ssize_t num_pulses) {
   int result;
+
+  encoders->num_pulses = num_pulses;
 
   if (!(result = robox_device_open(&encoders->right_dev, right_dev, 
       robox_device_input, ROBOX_ENCODERS_READ_TIMEOUT)))
@@ -39,4 +43,38 @@ int robox_encoders_destroy(robox_encoders_p encoders) {
     return robox_device_close(&encoders->left_dev);
   else
     return result;
+}
+
+int robox_encoders_get_values(robox_encoders_p encoders, int* right_value, 
+  int* left_value) {
+  int result;
+
+  if (!(result = robox_device_read(&encoders->right_dev, right_value)))
+    return robox_device_read(&encoders->left_dev, left_value);
+  else
+    return result;
+}
+
+double robox_encoders_to_angle(robox_encoders_p encoders, int old_value, 
+  int new_value, double gear_trans) {
+  int delta_value = 0;
+
+  if (new_value > old_value) {
+    int delta_max = old_value+ROBOX_ENCODERS_MAX_VALUE-new_value;
+
+    if (delta_max > new_value-old_value)
+      delta_value = new_value-old_value;
+    else
+      delta_value = -delta_max;
+  }
+  else {
+    int delta_max = ROBOX_ENCODERS_MAX_VALUE-old_value+new_value;
+
+    if (delta_max > old_value-new_value)
+      delta_value = new_value-old_value;
+    else
+      delta_value = delta_max;
+  }
+
+  return delta_value/(4.0*encoders->num_pulses*gear_trans)*2.0*M_PI;
 }

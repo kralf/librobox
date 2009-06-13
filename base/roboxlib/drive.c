@@ -18,6 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <stdio.h>
+
 #include "drive.h"
 
 #include "global.h"
@@ -33,8 +35,14 @@ const char* robox_drive_errors[] = {
 
 int robox_drive_init(robox_drive_p drive, const char* brake_disengage_dev,
   const char* brake_disengaged_dev, const char* motor_enable_dev,
-  const char* motor_right_dev, const char* motor_left_dev) {
+  const char* motor_right_dev, const char* motor_left_dev, double gear_trans,
+  double wheel_base, double wheel_right_radius, double wheel_left_radius) {
   int result;
+
+  drive->gear_trans = gear_trans;
+  drive->wheel_base = wheel_base;
+  drive->wheel_right_radius = wheel_right_radius;
+  drive->wheel_left_radius = wheel_left_radius;
 
   if (!(result = robox_device_open(&drive->brake_disengage_dev,
       brake_disengage_dev, robox_device_output, ROBOX_DRIVE_READ_TIMEOUT)) &&

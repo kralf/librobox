@@ -3,7 +3,8 @@ include $(CARMEN_HOME)/src/Makefile.conf
 ifndef CYGWIN
 CFLAGS += -fPIC
 endif
-IFLAGS += -I../../../posix/config -I../../../posix/thread
+IFLAGS += -I../../../posix/config -I../../../posix/timer \
+	-I../../../posix/thread
 LFLAGS += -lglobal -lipc -lparam_interface
 
 MODULE_NAME = "ROBOX"

@@ -31,6 +31,8 @@
 #include "bumper.h"
 #include "drive.h"
 
+#include "odometry.h"
+
 /** \brief Predefined RoboX constants
   */
 #define ROBOX_CONFIG_ARG_PREFIX                   "--robox-"
@@ -54,11 +56,26 @@
 #define ROBOX_PARAMETER_MOTOR_RIGHT_DEV           "motor-right-dev"
 #define ROBOX_PARAMETER_MOTOR_LEFT_DEV            "motor-left-dev"
 
+#define ROBOX_PARAMETER_ENCODER_PULSES            "enc-pulses"
+#define ROBOX_PARAMETER_GEAR_TRANSMISSION         "gear-trans"
+#define ROBOX_PARAMETER_WHEEL_BASE                "wheel-base"
+#define ROBOX_PARAMETER_WHEEL_RIGHT_RADIUS        "wheel-right-radius"
+#define ROBOX_PARAMETER_WHEEL_LEFT_RADIUS         "wheel-left-radius"
+
 /** \brief Predefined RoboX error codes
   */
 #define ROBOX_ERROR_NONE                      0
 #define ROBOX_ERROR_INIT                      1
 #define ROBOX_ERROR_START                     2
+#define ROBOX_ERROR_RESET                     3
+
+/** \brief Predefined RoboX error descriptions
+  */
+extern const char* robox_errors[];
+
+/** \brief Predefined RoboX default configuration
+  */
+extern config_t robox_default_config;
 
 /** \brief RoboX model enumeratable type
   */
@@ -66,9 +83,24 @@ typedef enum {
   robox_model_robox = 0,            //!< Standard RoboX model.
   robox_model_biba = 1,             //!< Biba model.
 } robox_model_t;
+
+/** \brief Structure defining the RoboX pose
+  */
+typedef struct robox_pose_t {
+  double x;                         //!< The x-coordinate of the pose in [m].
+  double y;                         //!< The y-coordinate of the pose in [m].
+  double theta;                     //!< The orientation of the pose in [rad].
+} robox_pose_t, *robox_pose_p;
+
+/** \brief Structure defining the RoboX velocity
+  */
+typedef struct robox_velocity_t {
+  double translational;             //!< The translational velocity in [m/s].
+  double rotational;                //!< The rotational velocity in [rad/s].
+} robox_velocity_t, *robox_velocity_p;
+
 /** \brief Structure defining the RoboX robot
   */
-
 typedef struct robox_robot_t {
   robox_model_t model;              //!< The robot's model.
 
@@ -79,20 +111,17 @@ typedef struct robox_robot_t {
   robox_bumper_t bumper;            //!< The robot's bumper.
   robox_drive_t drive;              //!< The robot's drive.
 
+  robox_odometry_t odometry;        //!< The robot's odometry.
+
   config_t config;                  //!< The robot's configuration parameters.
 
   thread_t thread;                  //!< The robot's main thread.
+  thread_mutex_t mutex;             //!< The access mutex of the robot.
 
   int security_error;               //!< The robot's recent security error.
+  robox_pose_t pose;                //!< The robot's recent pose.
+  robox_velocity_t velocity;        //!< The robot's recent velocity.
 } robox_robot_t, *robox_robot_p;
-
-/** \brief Predefined RoboX error descriptions
-  */
-extern const char* robox_errors[];
-
-/** \brief Predefined RoboX default configuration
-  */
-extern config_t robox_default_config;
 
 /** \brief Initialize robot
   * \param[in] robot The robot to be initialized.
@@ -124,5 +153,24 @@ int robox_start(
   */
 int robox_stop(
   robox_robot_p robot);
+
+/** \brief Reset robot
+  * \note This method safely resets the robot's odometry.
+  * \param[in] robot The started robot to be reset.
+  * \return The resulting error code.
+  */
+int robox_reset(
+  robox_robot_p robot);
+
+/** \brief Receive the robot's recent state
+  * \note This method safely accesses the robot's pose and velocity.
+  * \param[in] robot The started robot to receive the state for.
+  * \param[out] pose The recent pose of the robot.
+  * \param[out] velocity The recent velocity of the robot.
+  */
+void robox_get_state(
+  robox_robot_p robot,
+  robox_pose_p pose,
+  robox_velocity_p velocity);
 
 #endif

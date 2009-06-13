@@ -40,20 +40,25 @@
 #define ROBOX_DRIVE_ERROR_RELEASE              4
 #define ROBOX_DRIVE_ERROR_SET_CURRENT          5
 
-/** \brief Predefined RoboX security error descriptions
-  */
-extern const char* robox_security_errors[];
-
 /** \brief Structure defining the RoboX drive
   */
 typedef struct robox_drive_t {
-  robox_device_t brake_disengage_dev;     //!< The brake disengage device.
-  robox_device_t brake_disengaged_dev;    //!< The brake disengaged device.
+  robox_device_t brake_disengage_dev;   //!< The brake disengage device.
+  robox_device_t brake_disengaged_dev;  //!< The brake disengaged device.
 
-  robox_device_t motor_enable_dev;        //!< The motor enable device.
-  robox_device_t motor_right_dev;         //!< The right motor device.
-  robox_device_t motor_left_dev;          //!< The left motor device.
+  robox_device_t motor_enable_dev;      //!< The motor enable device.
+  robox_device_t motor_right_dev;       //!< The right motor device.
+  robox_device_t motor_left_dev;        //!< The left motor device.
+
+  double gear_trans;                //!< The drive's gear transmission.
+  double wheel_base;                //!< The drive's wheel base in [m].
+  double wheel_right_radius;        //!< The drive's right wheel radius in [m].
+  double wheel_left_radius;         //!< The drive's left wheel radius in [m].
 } robox_drive_t, *robox_drive_p;
+
+/** \brief Predefined RoboX drive error descriptions
+  */
+extern const char* robox_drive_errors[];
 
 /** \brief Initialize RoboX drive
   * \param[in] drive The RoboX drive to be initialized.
@@ -62,6 +67,10 @@ typedef struct robox_drive_t {
   * \param[in] motor_enable_dev The name of the motor enable device.
   * \param[in] motor_right_dev The name of the right motor device.
   * \param[in] motor_left_dev The name of the left motor device.
+  * \param[in] gear_trans The gear transmission of the drive.
+  * \param[in] wheel_base The wheel base of the drive in [m].
+  * \param[in] wheel_right_radius The right wheel radius of the drive in [m].
+  * \param[in] wheel_left_radius The left wheel radius of the drive in [m].
   * \return The resulting device error code.
   */
 int robox_drive_init(
@@ -70,7 +79,11 @@ int robox_drive_init(
   const char* brake_disengaged_dev,
   const char* motor_enable_dev,
   const char* motor_right_dev,
-  const char* motor_left_dev);
+  const char* motor_left_dev,
+  double gear_trans,
+  double wheel_base,
+  double wheel_right_radius,
+  double wheel_left_radius);
 
 /** \brief Destroy RoboX drive
   * \param[in] drive The initialized RoboX drive to be destroyed.

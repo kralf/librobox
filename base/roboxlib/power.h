@@ -32,16 +32,16 @@
 #define ROBOX_POWER_ERROR_NONE                 0
 #define ROBOX_POWER_ERROR_UP                   1
 
-/** \brief Predefined RoboX power error descriptions
-  */
-extern const char* robox_power_errors[];
-
 /** \brief Structure defining the RoboX power module
   */
 typedef struct robox_power_t {
   robox_device_t engage_dev;    //!< The power engage device.
   robox_device_t battery_dev;   //!< The battery device.
 } robox_power_t, *robox_power_p;
+
+/** \brief Predefined RoboX power error descriptions
+  */
+extern const char* robox_power_errors[];
 
 /** \brief Initialize RoboX power module
   * \param[in] power The RoboX power module to be initialized.
