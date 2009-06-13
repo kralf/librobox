@@ -24,93 +24,33 @@
 
 #include "global.h"
 
-const char* robox_drive_errors[] = {
-  "success",
-  "error starting drive",
-  "error stopping drive",
-  "error fastening brake",
-  "error releasing brake",
-  "error setting motor current",
-};
-
-int robox_drive_init(robox_drive_p drive, const char* brake_disengage_dev,
-  const char* brake_disengaged_dev, const char* motor_enable_dev,
-  const char* motor_right_dev, const char* motor_left_dev, double gear_trans,
-  double wheel_base, double wheel_right_radius, double wheel_left_radius) {
-  int result;
-
+void robox_drive_init(robox_drive_p drive, double gear_trans, double 
+  wheel_base, double wheel_right_radius, double wheel_left_radius) {
   drive->gear_trans = gear_trans;
+
   drive->wheel_base = wheel_base;
   drive->wheel_right_radius = wheel_right_radius;
   drive->wheel_left_radius = wheel_left_radius;
-
-  if (!(result = robox_device_open(&drive->brake_disengage_dev,
-      brake_disengage_dev, robox_device_output, ROBOX_DRIVE_READ_TIMEOUT)) &&
-    !(result = robox_device_open(&drive->brake_disengaged_dev,
-      brake_disengaged_dev, robox_device_input, ROBOX_DRIVE_READ_TIMEOUT)) &&
-    !(result = robox_device_open(&drive->motor_enable_dev, motor_enable_dev, 
-      robox_device_output, ROBOX_DRIVE_READ_TIMEOUT)) &&
-    !(result = robox_device_open(&drive->motor_right_dev, motor_right_dev, 
-      robox_device_output, ROBOX_DRIVE_READ_TIMEOUT)))
-    return robox_device_open(&drive->motor_left_dev, motor_left_dev, 
-      robox_device_output, ROBOX_DRIVE_READ_TIMEOUT);                                        
-  else
-    return result;
 }
 
-int robox_drive_destroy(robox_drive_p drive) {
-  int result;
+void robox_drive_velocity_from_encoders(robox_drive_p drive, 
+  robox_encoders_vel_p enc_vel, robox_drive_vel_p drive_vel) {
+  double omega_right = -drive->wheel_right_radius*enc_vel->right/
+    drive->gear_trans;
+  double omega_left = drive->wheel_left_radius*enc_vel->left/
+    drive->gear_trans;
 
-  if (!(result = robox_device_close(&drive->brake_disengage_dev)) &&
-    !(result = robox_device_close(&drive->brake_disengaged_dev)) &&
-    !(result = robox_device_close(&drive->motor_enable_dev)) &&
-    !(result = robox_device_close(&drive->motor_right_dev)))
-    return robox_device_close(&drive->motor_left_dev);
-  else
-    return result;
+  drive_vel->translational = 0.5*(omega_right+omega_left);
+  drive_vel->rotational = (omega_right-omega_left)/drive->wheel_base;
 }
 
-int robox_drive_start(robox_drive_p drive) {
-  if (!robox_drive_set_current(drive, ROBOX_DRIVE_ZERO_CURRENT,
-      ROBOX_DRIVE_ZERO_CURRENT) &&
-    !robox_drive_release(drive) &&
-    !robox_device_write(&drive->motor_enable_dev, 1))
-    return ROBOX_DRIVE_ERROR_NONE;
-  else
-    return ROBOX_DRIVE_ERROR_START;
-}
+void robox_drive_velocity_to_encoders(robox_drive_p drive, robox_drive_vel_p 
+  drive_vel, robox_encoders_vel_p enc_vel) {
+  double omega_right = drive_vel->translational+0.5*drive->wheel_base*
+    drive_vel->rotational;
+  double omega_left = drive_vel->translational-0.5*drive->wheel_base*
+    drive_vel->rotational;
 
-int robox_drive_stop(robox_drive_p drive) {
-  if (!robox_device_write(&drive->motor_enable_dev, 0) &&
-    !robox_drive_brake(drive) &&
-    !robox_drive_set_current(drive, ROBOX_DRIVE_ZERO_CURRENT,
-      ROBOX_DRIVE_ZERO_CURRENT))
-    return ROBOX_DRIVE_ERROR_NONE;
-  else
-    return ROBOX_DRIVE_ERROR_STOP;
-}
-
-int robox_drive_brake(robox_drive_p drive) {
-  if (!robox_device_write(&drive->brake_disengage_dev, 0))
-    return ROBOX_DRIVE_ERROR_NONE;
-  else
-    return ROBOX_DRIVE_ERROR_BRAKE;
-}
-
-int robox_drive_release(robox_drive_p drive) {
-  if (!robox_device_write(&drive->brake_disengage_dev, 1))
-    return ROBOX_DRIVE_ERROR_NONE;
-  else
-    return ROBOX_DRIVE_ERROR_RELEASE;
-}
-
-int robox_drive_set_current(robox_drive_p drive, short right_current,
-  short left_current) {
-  if (!robox_device_write(&drive->motor_right_dev, clip(right_current, 
-    ROBOX_DRIVE_MIN_CURRENT, ROBOX_DRIVE_MAX_CURRENT)) &&
-    !robox_device_write(&drive->motor_left_dev, clip(left_current, 
-    ROBOX_DRIVE_MIN_CURRENT, ROBOX_DRIVE_MAX_CURRENT)))
-    return ROBOX_DRIVE_ERROR_NONE;
-  else
-    return ROBOX_DRIVE_ERROR_SET_CURRENT;
+  enc_vel->right = -drive->gear_trans*omega_right/drive->wheel_right_radius;
+  enc_vel->left = drive->gear_trans*omega_left/drive->wheel_left_radius;
 }

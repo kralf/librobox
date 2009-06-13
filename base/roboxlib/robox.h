@@ -29,9 +29,11 @@
 #include "sensors.h"
 #include "encoders.h"
 #include "bumper.h"
-#include "drive.h"
+#include "motors.h"
 
+#include "drive.h"
 #include "odometry.h"
+#include "control.h"
 
 /** \brief Predefined RoboX constants
   */
@@ -50,17 +52,20 @@
 #define ROBOX_PARAMETER_ENCODER_RIGHT_DEV         "enc-right-dev"
 #define ROBOX_PARAMETER_ENCODER_LEFT_DEV          "enc-left-dev"
 #define ROBOX_PARAMETER_BUMPER_DEV_DIR            "bumper-dev-dir"
-#define ROBOX_PARAMETER_BRAKE_DISENGAGE_DEV       "brake-disengage-dev"
-#define ROBOX_PARAMETER_BRAKE_DISENGAGED_DEV      "brake-disengaged-dev"
 #define ROBOX_PARAMETER_MOTOR_ENABLE_DEV          "motor-enable-dev"
 #define ROBOX_PARAMETER_MOTOR_RIGHT_DEV           "motor-right-dev"
 #define ROBOX_PARAMETER_MOTOR_LEFT_DEV            "motor-left-dev"
+#define ROBOX_PARAMETER_MOTOR_BRAKE_DEV           "motor-brake-dev"
 
 #define ROBOX_PARAMETER_ENCODER_PULSES            "enc-pulses"
 #define ROBOX_PARAMETER_GEAR_TRANSMISSION         "gear-trans"
 #define ROBOX_PARAMETER_WHEEL_BASE                "wheel-base"
 #define ROBOX_PARAMETER_WHEEL_RIGHT_RADIUS        "wheel-right-radius"
 #define ROBOX_PARAMETER_WHEEL_LEFT_RADIUS         "wheel-left-radius"
+
+#define ROBOX_PARAMETER_CONTROL_P_GAIN            "control-p-gain"
+#define ROBOX_PARAMETER_CONTROL_I_GAIN            "control-i-gain"
+#define ROBOX_PARAMETER_CONTROL_D_GAIN            "control-d-gain"
 
 /** \brief Predefined RoboX error codes
   */
@@ -84,21 +89,6 @@ typedef enum {
   robox_model_biba = 1,             //!< Biba model.
 } robox_model_t;
 
-/** \brief Structure defining the RoboX pose
-  */
-typedef struct robox_pose_t {
-  double x;                         //!< The x-coordinate of the pose in [m].
-  double y;                         //!< The y-coordinate of the pose in [m].
-  double theta;                     //!< The orientation of the pose in [rad].
-} robox_pose_t, *robox_pose_p;
-
-/** \brief Structure defining the RoboX velocity
-  */
-typedef struct robox_velocity_t {
-  double translational;             //!< The translational velocity in [m/s].
-  double rotational;                //!< The rotational velocity in [rad/s].
-} robox_velocity_t, *robox_velocity_p;
-
 /** \brief Structure defining the RoboX robot
   */
 typedef struct robox_robot_t {
@@ -109,9 +99,11 @@ typedef struct robox_robot_t {
   robox_sensors_t sensors;          //!< The robot's sensor module.
   robox_encoders_t encoders;        //!< The robot's encoder module.
   robox_bumper_t bumper;            //!< The robot's bumper.
-  robox_drive_t drive;              //!< The robot's drive.
+  robox_motors_t motors;            //!< The robot's motors.
 
+  robox_drive_t drive;              //!< The robot's drive.
   robox_odometry_t odometry;        //!< The robot's odometry.
+  robox_control_t control;          //!< The robot's controller.
 
   config_t config;                  //!< The robot's configuration parameters.
 
@@ -119,8 +111,10 @@ typedef struct robox_robot_t {
   thread_mutex_t mutex;             //!< The access mutex of the robot.
 
   int security_error;               //!< The robot's recent security error.
-  robox_pose_t pose;                //!< The robot's recent pose.
-  robox_velocity_t velocity;        //!< The robot's recent velocity.
+  robox_drive_pose_t pose;          //!< The robot's recent pose.
+  robox_drive_vel_t velocity;       //!< The robot's recent velocity.
+
+  robox_drive_vel_t set_vel;        //!< The robot's setpoint velocity.
 } robox_robot_t, *robox_robot_p;
 
 /** \brief Initialize robot
@@ -155,7 +149,7 @@ int robox_stop(
   robox_robot_p robot);
 
 /** \brief Reset robot
-  * \note This method safely resets the robot's odometry.
+  * \note This method safely resets the robot's velocity and odometry.
   * \param[in] robot The started robot to be reset.
   * \return The resulting error code.
   */
@@ -170,7 +164,16 @@ int robox_reset(
   */
 void robox_get_state(
   robox_robot_p robot,
-  robox_pose_p pose,
-  robox_velocity_p velocity);
+  robox_drive_pose_p pose,
+  robox_drive_vel_p velocity);
+
+/** \brief Set the robot's velocity
+  * \note This method safely accesses the robot's setpoint velocity.
+  * \param[in] robot The started robot to set the velocity for.
+  * \param[out] velocity The velocity to be set for the robot.
+  */
+void robox_set_velocity(
+  robox_robot_p robot,
+  robox_drive_vel_p velocity);
 
 #endif

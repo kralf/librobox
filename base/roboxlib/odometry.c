@@ -23,7 +23,6 @@
 #include "odometry.h"
 
 #include "global.h"
-#include "robox.h"
 
 const char* robox_odometry_errors[] = {
   "success",
@@ -31,8 +30,8 @@ const char* robox_odometry_errors[] = {
   "error integrating odometry",
 };
 
-void robox_odometry_init(robox_odometry_p odometry, robox_encoders_p encoders,
-  robox_drive_p drive) {
+void robox_odometry_init(robox_odometry_p odometry, robox_encoders_p 
+  encoders, robox_drive_p drive) {
   odometry->encoders = encoders;
   odometry->drive = drive;
 }
@@ -43,8 +42,7 @@ void robox_odometry_destroy(robox_odometry_p odometry) {
 }
 
 int robox_odometry_start(robox_odometry_p odometry) {
-  if (!robox_encoders_get_values(odometry->encoders, &odometry->right_value,
-    &odometry->left_value)) {
+  if (!robox_encoders_get_position(odometry->encoders, &odometry->enc_pos)) {
     timer_start(&odometry->timestamp);
     return ROBOX_ODOMETRY_ERROR_NONE;
   }
@@ -62,31 +60,19 @@ double robox_odometry_mod_2pi(double theta) {
     return theta;
 }
 
-int robox_odometry_integrate(robox_odometry_p odometry, robox_pose_p pose,
-  robox_velocity_p velocity) {
-  int right_value, left_value;
+int robox_odometry_integrate(robox_odometry_p odometry, robox_drive_pose_p 
+  pose, robox_drive_vel_p velocity) {
+  robox_encoders_vel_t enc_vel;
+  double dt = timer_stop(odometry->timestamp);
 
-  if (!robox_encoders_get_values(odometry->encoders, &right_value, 
-    &left_value)) {
-    double dalpha_right = robox_encoders_to_angle(odometry->encoders,
-      odometry->right_value, right_value, odometry->drive->gear_trans);
-    double dalpha_left = -robox_encoders_to_angle(odometry->encoders,
-      odometry->left_value, left_value, odometry->drive->gear_trans);
+  if (!robox_encoders_get_velocity(odometry->encoders,  &odometry->enc_pos, 
+      dt, &enc_vel)) {
+    robox_drive_velocity_from_encoders(odometry->drive, &enc_vel, velocity);
 
-    double drho_right = odometry->drive->wheel_right_radius*dalpha_right;
-    double drho_left = odometry->drive->wheel_left_radius*dalpha_left;
-    double drho = 0.5*(drho_right+drho_left);
-    double dtheta = (drho_right-drho_left)/odometry->drive->wheel_base;
-    double dt = timer_stop(odometry->timestamp);
+    pose->theta = robox_odometry_mod_2pi(pose->theta+velocity->rotational*dt);
+    pose->x += velocity->translational*dt*cos(pose->theta);
+    pose->y += velocity->translational*dt*sin(pose->theta);
 
-    pose->theta = robox_odometry_mod_2pi(pose->theta+dtheta);
-    pose->x += drho*cos(pose->theta);
-    pose->y += drho*sin(pose->theta);
-    velocity->translational = drho/dt;
-    velocity->rotational = dtheta/dt;
-  
-    odometry->right_value = right_value;
-    odometry->left_value = left_value;
     timer_start(&odometry->timestamp);
 
     return ROBOX_ODOMETRY_ERROR_NONE;

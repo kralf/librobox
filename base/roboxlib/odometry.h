@@ -24,27 +24,23 @@
 #include "encoders.h"
 #include "drive.h"
 
-/** \brief Predefined RoboX security error codes
+/** \brief Predefined RoboX odometry error codes
   */
 #define ROBOX_ODOMETRY_ERROR_NONE                 0
 #define ROBOX_ODOMETRY_ERROR_START                1
 #define ROBOX_ODOMETRY_ERROR_INTEGRATE            2
 
-struct robox_pose_t;
-struct robox_velocity_t;
-
 /** \brief Structure defining the RoboX odometry
   */
 typedef struct robox_odometry_t {
-  robox_encoders_p encoders;    //!< The robot's encoders.
-  robox_drive_p drive;          //!< The robot's drive.
+  robox_encoders_p encoders;      //!< The robot's encoders.
+  robox_drive_p drive;            //!< The robot's drive.
 
-  int right_value;              //!< The recent right encoder value.
-  int left_value;               //!< The recent left encoder value.
-  double timestamp;             //!< The recent timestamp.
+  robox_encoders_pos_t enc_pos;   //!< The recent encoder position.
+  double timestamp;               //!< The recent timestamp.
 } robox_odometry_t, *robox_odometry_p;
 
-/** \brief Predefined RoboX security error descriptions
+/** \brief Predefined RoboX odometry error descriptions
   */
 extern const char* robox_odometry_errors[];
 
@@ -79,7 +75,7 @@ int robox_odometry_start(
   */
 int robox_odometry_integrate(
   robox_odometry_p odometry,
-  struct robox_pose_t* pose,
-  struct robox_velocity_t* velocity);
+  robox_drive_pose_p pose,
+  robox_drive_vel_p velocity);
 
 #endif

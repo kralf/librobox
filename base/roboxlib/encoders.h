@@ -32,11 +32,25 @@
 /** \brief Structure defining the RoboX encoders
   */
 typedef struct robox_encoders_t {
-  robox_device_t right_dev;     //!< The right encoder device.
-  robox_device_t left_dev;      //!< The left encoder device.
+  robox_device_t right_dev;   //!< The right encoder device.
+  robox_device_t left_dev;    //!< The left encoder device.
 
-  ssize_t num_pulses;           //!< The number of encoder pulses.
+  ssize_t num_pulses;         //!< The number of encoder pulses.
 } robox_encoders_t, *robox_encoders_p;
+
+/** \brief Structure defining the RoboX encoder position
+  */
+typedef struct robox_encoders_pos_t {
+  int right;                  //!< The right encoder's position in [pu].
+  int left;                   //!< The left encoder's position in [pu].
+} robox_encoders_pos_t, *robox_encoders_pos_p;
+
+/** \brief Structure defining the RoboX encoder velocity
+  */
+typedef struct robox_encoders_vel_t {
+  double right;               //!< The right encoder's velocity in [rad/s].
+  double left;                //!< The left encoder's velocity in [rad/s].
+} robox_encoders_vel_t, *robox_encoders_vel_p;
 
 /** \brief Initialize RoboX encoders
   * \param[in] encoders The RoboX encoders to be initialized.
@@ -58,26 +72,28 @@ int robox_encoders_init(
 int robox_encoders_destroy(
   robox_encoders_p encoders);
 
-/** \brief Retrieve encoder values
+/** \brief Retrieve encoder position
   * \param[in] encoders The encoders to retrieve the values from.
+  * \param[out] position The retrieved encoder position.
   * \return The resulting device error code.
   */
-int robox_encoders_get_values(
+int robox_encoders_get_position(
   robox_encoders_p encoders,
-  int* right_value,
-  int* left_value);
+  robox_encoders_pos_p position);
 
-/** \brief Compute encoder angle
-  * \param[in] encoders The encoders to compute the angle for.
-  * \param[in] old_value The old encoder value to compute the angle from.
-  * \param[in] new_value The new encoder value to compute the angle from.
-  * \param[in] gear_trans The gear transmission used to compute the angle.
-  * \return The resulting angle in [rad].
+/** \brief Retrieve encoder velocity
+  * \param[in] encoders The encoders to retrieve the velocity from.
+  * \param[in,out] position The recent encoder position that will be used
+  *   for computing the encoder velocity and then updated.
+  * \param[in] dtime The time difference used to compute the encoder 
+  *   velocity in [s].
+  * \param[out] velocity The retrieved encoder velocity.
+  * \return The resulting device error code.
   */
-double robox_encoders_to_angle(
+int robox_encoders_get_velocity(
   robox_encoders_p encoders,
-  int old_value,
-  int new_value,
-  double gear_trans);
+  robox_encoders_pos_p position,
+  double dtime,
+  robox_encoders_vel_p velocity);
 
 #endif

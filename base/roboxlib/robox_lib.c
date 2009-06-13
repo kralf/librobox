@@ -25,8 +25,6 @@
 
 int robox_model;
 
-double robox_control_freq;
-
 char* robox_security_estop_dev;
 char* robox_security_sstop_dev;
 char* robox_security_watchdog_dev;
@@ -38,11 +36,10 @@ char* robox_sensors_ok_dev;
 char* robox_encoder_right_dev;
 char* robox_encoder_left_dev;
 char* robox_bumper_dev_dir;
-char* robox_brake_disengage_dev;
-char* robox_brake_disengaged_dev;
 char* robox_motor_enable_dev;
 char* robox_motor_right_dev;
 char* robox_motor_left_dev;
+char* robox_motor_brake_dev;
 
 int robox_encoder_pulses;
 double robox_gear_trans;
@@ -50,14 +47,16 @@ double robox_wheel_base;
 double robox_wheel_right_radius;
 double robox_wheel_left_radius;
 
+double robox_control_freq;
+double robox_control_p_gain;
+double robox_control_i_gain;
+double robox_control_d_gain;
+
 robox_robot_t robox_robot;
 
 int robox_read_parameters(int argc, char **argv) {
   int num_params;
   carmen_param_t robox_params[] = {
-    {"robox", "control_freq", CARMEN_PARAM_DOUBLE, 
-      &robox_control_freq, 0, NULL},
-
     {"robox", "security_estop_dev", CARMEN_PARAM_STRING, 
       &robox_security_estop_dev, 0, NULL},
     {"robox", "security_sstop_dev", CARMEN_PARAM_STRING, 
@@ -80,16 +79,14 @@ int robox_read_parameters(int argc, char **argv) {
       &robox_encoder_left_dev, 0, NULL},
     {"robox", "bumper_dev_dir", CARMEN_PARAM_STRING, 
       &robox_bumper_dev_dir, 0, NULL},
-    {"robox", "brake_disengage_dev", CARMEN_PARAM_STRING, 
-      &robox_brake_disengage_dev, 0, NULL},
-    {"robox", "brake_disengaged_dev", CARMEN_PARAM_STRING, 
-      &robox_brake_disengaged_dev, 0, NULL},
     {"robox", "motor_enable_dev", CARMEN_PARAM_STRING, 
       &robox_motor_enable_dev, 0, NULL},
     {"robox", "motor_right_dev", CARMEN_PARAM_STRING, 
       &robox_motor_right_dev, 0, NULL},
     {"robox", "motor_left_dev", CARMEN_PARAM_STRING, 
       &robox_motor_left_dev, 0, NULL},
+    {"robox", "motor_brake_dev", CARMEN_PARAM_STRING, 
+      &robox_motor_brake_dev, 0, NULL},
 
     {"robox", "encoder_pulses", CARMEN_PARAM_INT, 
       &robox_encoder_pulses, 0, NULL},
@@ -101,6 +98,15 @@ int robox_read_parameters(int argc, char **argv) {
       &robox_wheel_right_radius, 0, NULL},
     {"robox", "wheel_left_radius", CARMEN_PARAM_DOUBLE, 
       &robox_wheel_left_radius, 0, NULL},
+
+    {"robox", "control_freq", CARMEN_PARAM_DOUBLE, 
+      &robox_control_freq, 0, NULL},
+    {"robox", "control_p_gain", CARMEN_PARAM_DOUBLE, 
+      &robox_control_p_gain, 0, NULL},
+    {"robox", "control_i_gain", CARMEN_PARAM_DOUBLE, 
+      &robox_control_i_gain, 0, NULL},
+    {"robox", "control_d_gain", CARMEN_PARAM_DOUBLE, 
+      &robox_control_d_gain, 0, NULL},
   };
 
   num_params = sizeof(robox_params)/sizeof(carmen_param_t);
@@ -165,16 +171,14 @@ int carmen_base_direct_initialize_robot(char *model, char *dev __attribute__
       robox_encoder_left_dev);
     config_set_string(&config, ROBOX_PARAMETER_BUMPER_DEV_DIR, 
       robox_bumper_dev_dir);
-    config_set_string(&config, ROBOX_PARAMETER_BRAKE_DISENGAGE_DEV, 
-      robox_brake_disengage_dev);
-    config_set_string(&config, ROBOX_PARAMETER_BRAKE_DISENGAGED_DEV, 
-      robox_brake_disengaged_dev);
     config_set_string(&config, ROBOX_PARAMETER_MOTOR_ENABLE_DEV, 
       robox_motor_enable_dev);
     config_set_string(&config, ROBOX_PARAMETER_MOTOR_RIGHT_DEV, 
       robox_motor_right_dev);
     config_set_string(&config, ROBOX_PARAMETER_MOTOR_LEFT_DEV, 
       robox_motor_left_dev);
+    config_set_string(&config, ROBOX_PARAMETER_MOTOR_BRAKE_DEV, 
+      robox_motor_brake_dev);
 
     config_set_int(&config, ROBOX_PARAMETER_ENCODER_PULSES, 
       robox_encoder_pulses);
@@ -186,6 +190,13 @@ int carmen_base_direct_initialize_robot(char *model, char *dev __attribute__
       robox_wheel_right_radius);
     config_set_float(&config, ROBOX_PARAMETER_WHEEL_LEFT_RADIUS, 
       robox_wheel_left_radius);
+
+    config_set_float(&config, ROBOX_PARAMETER_CONTROL_P_GAIN, 
+      robox_control_p_gain);
+    config_set_float(&config, ROBOX_PARAMETER_CONTROL_I_GAIN, 
+      robox_control_i_gain);
+    config_set_float(&config, ROBOX_PARAMETER_CONTROL_D_GAIN, 
+      robox_control_d_gain);
 
     if (robox_init(&robox_robot, &config) ||
       robox_start(&robox_robot, robox_control_freq))
@@ -217,8 +228,9 @@ int carmen_base_direct_set_deceleration(double deceleration __attribute__
 }
 
 int carmen_base_direct_set_velocity(double tv, double rv) {
-  tv = 0.0;
-  rv = 0.0;
+  robox_drive_vel_t velocity = {tv, rv};
+
+  robox_set_velocity(&robox_robot, &velocity);
 
   return 0;
 }
@@ -230,11 +242,11 @@ int carmen_base_direct_update_status(double* update_timestamp __attribute__
 
 int carmen_base_direct_get_state(double *displacement, double *rotation,
   double *tv, double *rv) {
-  static robox_pose_t prev_pose;
+  static robox_drive_pose_t prev_pose;
   static int initialized = 0;
 
-  robox_pose_t pose;
-  robox_velocity_t velocity;
+  robox_drive_pose_t pose;
+  robox_drive_vel_t velocity;
 
   robox_get_state(&robox_robot, &pose, &velocity);
 
@@ -261,8 +273,8 @@ int carmen_base_direct_get_state(double *displacement, double *rotation,
 
 int carmen_base_direct_get_integrated_state(double *x, double *y, double 
   *theta, double *tv, double *rv) {
-  robox_pose_t pose;
-  robox_velocity_t velocity;
+  robox_drive_pose_t pose;
+  robox_drive_vel_t velocity;
 
   robox_get_state(&robox_robot, &pose, &velocity);
 

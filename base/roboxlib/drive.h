@@ -21,114 +21,67 @@
 #ifndef ROBOX_DRIVE_H
 #define ROBOX_DRIVE_H
 
-#include "device.h"
-
-/** \brief Predefined RoboX drive constants
-  */
-#define ROBOX_DRIVE_READ_TIMEOUT               0.01
-
-#define ROBOX_DRIVE_MIN_CURRENT                0
-#define ROBOX_DRIVE_ZERO_CURRENT               2048
-#define ROBOX_DRIVE_MAX_CURRENT                4095
-
-/** \brief Predefined RoboX security error codes
-  */
-#define ROBOX_DRIVE_ERROR_NONE                 0
-#define ROBOX_DRIVE_ERROR_START                1
-#define ROBOX_DRIVE_ERROR_STOP                 2
-#define ROBOX_DRIVE_ERROR_BRAKE                3
-#define ROBOX_DRIVE_ERROR_RELEASE              4
-#define ROBOX_DRIVE_ERROR_SET_CURRENT          5
+#include "encoders.h"
 
 /** \brief Structure defining the RoboX drive
   */
 typedef struct robox_drive_t {
-  robox_device_t brake_disengage_dev;   //!< The brake disengage device.
-  robox_device_t brake_disengaged_dev;  //!< The brake disengaged device.
+  double gear_trans;            //!< The robot's gear transmission.
 
-  robox_device_t motor_enable_dev;      //!< The motor enable device.
-  robox_device_t motor_right_dev;       //!< The right motor device.
-  robox_device_t motor_left_dev;        //!< The left motor device.
-
-  double gear_trans;                //!< The drive's gear transmission.
-  double wheel_base;                //!< The drive's wheel base in [m].
-  double wheel_right_radius;        //!< The drive's right wheel radius in [m].
-  double wheel_left_radius;         //!< The drive's left wheel radius in [m].
+  double wheel_base;            //!< The robot's wheel base in [m].
+  double wheel_right_radius;    //!< The robot's right wheel radius in [m].
+  double wheel_left_radius;     //!< The robot's left wheel radius in [m].
 } robox_drive_t, *robox_drive_p;
 
-/** \brief Predefined RoboX drive error descriptions
+/** \brief Structure defining the RoboX drive pose
   */
-extern const char* robox_drive_errors[];
+typedef struct robox_drive_pose_t {
+  double x;                     //!< The x-coordinate of the pose in [m].
+  double y;                     //!< The y-coordinate of the pose in [m].
+  double theta;                 //!< The orientation of the pose in [rad].
+} robox_drive_pose_t, *robox_drive_pose_p;
+
+/** \brief Structure defining the RoboX drive velocity
+  */
+typedef struct robox_drive_vel_t {
+  double translational;         //!< The translational velocity in [m/s].
+  double rotational;            //!< The rotational velocity in [rad/s].
+} robox_drive_vel_t, *robox_drive_vel_p;
 
 /** \brief Initialize RoboX drive
   * \param[in] drive The RoboX drive to be initialized.
-  * \param[in] brake_disengage_dev The name of the brake disengage device.
-  * \param[in] brake_disengaged_dev The name of the brake disengaged device.
-  * \param[in] motor_enable_dev The name of the motor enable device.
-  * \param[in] motor_right_dev The name of the right motor device.
-  * \param[in] motor_left_dev The name of the left motor device.
-  * \param[in] gear_trans The gear transmission of the drive.
-  * \param[in] wheel_base The wheel base of the drive in [m].
-  * \param[in] wheel_right_radius The right wheel radius of the drive in [m].
-  * \param[in] wheel_left_radius The left wheel radius of the drive in [m].
-  * \return The resulting device error code.
+  * \param[in] gear_trans The gear transmission of the robot.
+  * \param[in] wheel_base The wheel base of the robot in [m].
+  * \param[in] wheel_right_radius The right wheel radius of the robot in [m].
+  * \param[in] wheel_left_radius The left wheel radius of the robot in [m].
   */
-int robox_drive_init(
+void robox_drive_init(
   robox_drive_p drive,
-  const char* brake_disengage_dev,
-  const char* brake_disengaged_dev,
-  const char* motor_enable_dev,
-  const char* motor_right_dev,
-  const char* motor_left_dev,
   double gear_trans,
   double wheel_base,
   double wheel_right_radius,
   double wheel_left_radius);
 
-/** \brief Destroy RoboX drive
-  * \param[in] drive The initialized RoboX drive to be destroyed.
-  * \return The resulting device error code.
+/** \brief Compute drive velocity from encoder velocity
+  * \param[in] drive The drive to compute the velocity for.
+  * \param[in] enc_vel The encoder velocity that will be used for computing 
+  *   the drive velocity.
+  * \param[out] drive_vel The resulting drive velocity.
   */
-int robox_drive_destroy(
-  robox_drive_p drive);
-
-/** \brief Start the drive
-  * \param[in] drive The drive to be started.
-  * \return The resulting device error code.
-  */
-int robox_drive_start(
-  robox_drive_p drive);
-
-/** \brief Stop the drive
-  * \param[in] drive The drive to be stopped.
-  * \return The resulting device error code.
-  */
-int robox_drive_stop(
-  robox_drive_p drive);
-
-/** \brief Fasten the brake
-  * \param[in] drive The drive to fasten the break for.
-  * \return The resulting device error code.
-  */
-int robox_drive_brake(
-  robox_drive_p drive);
-
-/** \brief Release the brake
-  * \param[in] drive The drive to release the break for.
-  * \return The resulting device error code.
-  */
-int robox_drive_release(
-  robox_drive_p drive);
-
-/** \brief Set motor current
-  * \param[in] drive The drive to set the motor current for.
-  * \param[in] right_current The current value to be set for the right motor.
-  * \param[in] left_current The current value to be set for the left motor.
-  * \return The resulting device error code.
-  */
-int robox_drive_set_current(
+void robox_drive_velocity_from_encoders(
   robox_drive_p drive,
-  short right_current,
-  short left_current);
+  robox_encoders_vel_p enc_vel,
+  robox_drive_vel_p drive_vel);
+
+/** \brief Compute encoder velocity from drive velocity
+  * \param[in] drive The drive to compute the encoder velocity for.
+  * \param[in] drive_vel The drive velocity that will be used for computing 
+  *   the corresponding encoder velocity.
+  * \param[out] enc_vel The resulting encoder velocity.
+  */
+void robox_drive_velocity_to_encoders(
+  robox_drive_p drive,
+  robox_drive_vel_p drive_vel,
+  robox_encoders_vel_p enc_vel);
 
 #endif

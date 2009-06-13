@@ -45,18 +45,18 @@ int robox_encoders_destroy(robox_encoders_p encoders) {
     return result;
 }
 
-int robox_encoders_get_values(robox_encoders_p encoders, int* right_value, 
-  int* left_value) {
+int robox_encoders_get_position(robox_encoders_p encoders, robox_encoders_pos_p 
+  position) {
   int result;
 
-  if (!(result = robox_device_read(&encoders->right_dev, right_value)))
-    return robox_device_read(&encoders->left_dev, left_value);
+  if (!(result = robox_device_read(&encoders->right_dev, &position->right)))
+    return robox_device_read(&encoders->left_dev, &position->left);
   else
     return result;
 }
 
 double robox_encoders_to_angle(robox_encoders_p encoders, int old_value, 
-  int new_value, double gear_trans) {
+  int new_value) {
   int delta_value = 0;
 
   if (new_value > old_value) {
@@ -76,5 +76,22 @@ double robox_encoders_to_angle(robox_encoders_p encoders, int old_value,
       delta_value = delta_max;
   }
 
-  return delta_value/(4.0*encoders->num_pulses*gear_trans)*2.0*M_PI;
+  return delta_value/(4.0*encoders->num_pulses)*2.0*M_PI;
+}
+
+int robox_encoders_get_velocity(robox_encoders_p encoders, robox_encoders_pos_p 
+  position, double dtime, robox_encoders_vel_p velocity) {
+  robox_encoders_pos_t pos;
+  int result;
+
+  if (!(result = robox_encoders_get_position(encoders, &pos))) {
+    velocity->right = robox_encoders_to_angle(encoders, pos.right, 
+      position->right)/dtime;
+    velocity->left = robox_encoders_to_angle(encoders, pos.left, 
+      position->left)/dtime;
+    
+    *position = pos;
+  }
+
+  return result;
 }
