@@ -12,7 +12,7 @@ function carmen_start_module()
 {
   PIDFILE="/var/run/`basename $1`.pid"
   start-stop-daemon --start --quiet --background --make-pidfile \
-    --pidfile "$PIDFILE" --exec "$1"
+    --pidfile "$PIDFILE" --exec "$1 $2"
 }
 
 function carmen_stop_module()
@@ -27,5 +27,5 @@ function carmen_stop_module()
 function carmen_restart_module()
 {
   carmen_stop_module "$1"
-  carmen_start_module "$1"
+  carmen_start_module "$1" "$2"
 }
