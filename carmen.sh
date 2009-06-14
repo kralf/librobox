@@ -6,7 +6,7 @@ CARMENCONF="/etc/carmen.conf"
 [ -e "$CARMENCONF" ] || exit 0
 . $CARMENCONF
 
-export CENTRALHOST="$CENTRALHOST"
+export CENTRALHOST="$CARMEN_CENTRAL_HOST"
 
 function carmen_start_module()
 {
