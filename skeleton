@@ -1,0 +1,41 @@
+#! /bin/sh -e
+### BEGIN INIT INFO
+# Provides:          ???
+# Default-Start:     2 3 4 5
+# Default-Stop:      1
+# Short-Description: Start the CARMEN ??? module
+### END INIT INFO
+
+CARMEN="/etc/init.d/carmen.sh"
+MODULE="/usr/bin/???"
+
+[ -e "$CARMEN" ] || exit 0
+[ -e "$MODULE" ] || exit 0
+
+. $CARMEN
+
+[ "$CARMEN_START_BASE" == 1 ] || exit 0
+
+case "$1" in
+  start)
+    echo -n "Starting ??? module"
+    carmen_start_module "$MODULE"    
+    echo "."
+	;;
+  stop)
+    echo -n "Stopping ??? module"
+    carmen_stop_module "$MODULE"    
+    echo "."
+	;;
+  restart)
+    echo -n "Restarting ??? module"
+    carmen_restart_module "$MODULE"    
+    echo "."
+  ;;
+
+  *)
+	  echo "Usage: /etc/init.d/??? {start|stop|restart}"
+	  exit 1
+esac
+
+exit 0
