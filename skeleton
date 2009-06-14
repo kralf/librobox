@@ -7,34 +7,36 @@
 ### END INIT INFO
 
 CARMEN="/etc/init.d/carmen.sh"
-MODULE="/usr/bin/???"
+
+MODULE_NAME="???"
+MODULE_BIN="???"
 
 [ -e "$CARMEN" ] || exit 0
-[ -e "$MODULE" ] || exit 0
+[ -e "$MODULE_BIN" ] || exit 0
 
 . $CARMEN
 
-[ "$CARMEN_START_BASE" == 1 ] || exit 0
+[ "$CARMEN_START_???" == 1 ] || exit 0
 
 case "$1" in
   start)
-    echo -n "Starting ??? module"
-    carmen_start_module "$MODULE"    
+    echo -n "Starting $MODULE_NAME module"
+    carmen_start_module "$MODULE_BIN"    
     echo "."
 	;;
   stop)
-    echo -n "Stopping ??? module"
-    carmen_stop_module "$MODULE"    
+    echo -n "Stopping $MODULE_NAME module"
+    carmen_stop_module "$MODULE_BIN"    
     echo "."
 	;;
   restart)
-    echo -n "Restarting ??? module"
-    carmen_restart_module "$MODULE"    
+    echo -n "Restarting $MODULE_NAME module"
+    carmen_restart_module "$MODULE_BIN"    
     echo "."
   ;;
 
   *)
-	  echo "Usage: /etc/init.d/??? {start|stop|restart}"
+	  echo "Usage: $0 {start|stop|restart}"
 	  exit 1
 esac
 
