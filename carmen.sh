@@ -10,9 +10,12 @@ export CENTRALHOST="$CARMEN_CENTRAL_HOST"
 
 function carmen_start_module()
 {
-  PIDFILE="/var/run/`basename $1`.pid"
+  MODULE_BIN=$1
+  shift
+  
+  PIDFILE="/var/run/`basename $MODULE_BIN`.pid"
   start-stop-daemon --start --quiet --background --make-pidfile \
-    --pidfile "$PIDFILE" --exec "$1 $2"
+    --pidfile "$PIDFILE" --exec $MODULE_BIN -- $*
 }
 
 function carmen_stop_module()
@@ -26,6 +29,6 @@ function carmen_stop_module()
 
 function carmen_restart_module()
 {
-  carmen_stop_module "$1"
-  carmen_start_module "$1" "$2"
+  carmen_stop_module $*
+  carmen_start_module $*
 }
