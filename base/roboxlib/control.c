@@ -91,16 +91,6 @@ int robox_control_iterate(robox_control_p control, robox_drive_vel_p set_vel) {
       control->i_gain*control->enc_vel_error.left+
       control->d_gain*enc_acc.left;
 
-    fprintf(stdout, "%8.2f %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f %8.2f\n",
-      control->p_gain*(enc_set_vel.right-enc_vel.right),
-      control->i_gain*control->enc_vel_error.right,
-      control->d_gain*enc_acc.right,
-      control->p_gain*(enc_set_vel.left-enc_vel.left),
-      control->i_gain*control->enc_vel_error.left,
-      control->d_gain*enc_acc.left,
-      control->motor_curr.right,
-      control->motor_curr.left);
-
     robox_motors_set_current(control->motors, &control->motor_curr);
 
     control->enc_vel = enc_vel;
