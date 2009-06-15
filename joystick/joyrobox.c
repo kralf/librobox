@@ -63,6 +63,7 @@ void send_base_velocity_command(double tv, double rv) {
 void sig_handler(int x) {
   if (x == SIGINT) {
     send_base_velocity_command(0.0, 0.0);
+    carmen_era_publish_stop_message(carmen_get_time());
 
     carmen_close_joystick(&joystick);
     carmen_ipc_disconnect();
@@ -130,7 +131,7 @@ int main(int argc, char **argv) {
 
   timestamp = carmen_get_time();
   while (1) {
-    carmen_ipc_sleep(0.1);
+    carmen_ipc_sleep(0.01);
 
     if (carmen_get_joystick_state(&joystick) >= 0) {
       if (joystick.buttons[joystick_btn_activate-1]) {
@@ -138,6 +139,8 @@ int main(int argc, char **argv) {
 
         if (!joystick_activated) {
           send_base_velocity_command(0.0, 0.0);
+          carmen_era_publish_stop_message(carmen_get_time());
+
           fprintf(stderr,"Joystick deactivated.\n");
         }
         else
