@@ -27,6 +27,7 @@ int joystick_axis_long;
 int joystick_axis_lat;
 int joystick_btn_deadman;
 int joystick_btn_activate;
+int joystick_btn_arm_stop;
 int joystick_btn_arm_close;
 int joystick_btn_arm_brace;
 
@@ -84,6 +85,8 @@ void read_parameters(int argc, char **argv) {
       0, NULL},
     {"joystick", "button_activate", CARMEN_PARAM_INT, &joystick_btn_activate, 
       0, NULL},
+    {"joystick", "button_arm_stop", CARMEN_PARAM_INT, &joystick_btn_arm_stop, 
+      0, NULL},
     {"joystick", "button_arm_close", CARMEN_PARAM_INT, &joystick_btn_arm_close, 
       0, NULL},
     {"joystick", "button_arm_brace", CARMEN_PARAM_INT, 
@@ -118,8 +121,9 @@ int main(int argc, char **argv) {
   fprintf(stderr,"2. Press button \"%d\" to activate/deactivate the "
     "joystick.\n", joystick_btn_activate);
   fprintf(stderr,"3. Press button \"%d\" to close in the arm,\n"
-                 "   button \"%d\" to brace the arm.\n" , 
-    joystick_btn_arm_close, joystick_btn_arm_brace);
+                 "   button \"%d\" to brace the arm.\n"
+                 "   button \"%d\" to stop the arm.\n", 
+    joystick_btn_arm_close, joystick_btn_arm_brace, joystick_btn_arm_stop);
   if (joystick_btn_deadman > 0)
     fprintf(stderr,"4. Hold button \"%d\" to keep the robot moving.\n\n", 
       joystick_btn_deadman);
@@ -155,8 +159,12 @@ int main(int argc, char **argv) {
 
         send_base_velocity_command(cmd_tv, cmd_rv);
 
+        if (joystick.buttons[joystick_btn_arm_stop-1]) {
+          carmen_era_publish_stop_message(
+            carmen_get_time());
+        }
         if (joystick.buttons[joystick_btn_arm_close-1]) {
-          carmen_era_publish_joint_cmd(
+          carmen_era_publish_joint_cmd_message(
             carmen_degrees_to_radians(0.0),
             carmen_degrees_to_radians(1.0), 
             carmen_degrees_to_radians(0.0), 
@@ -166,7 +174,7 @@ int main(int argc, char **argv) {
             0.5, carmen_get_time());
         }
         else if (joystick.buttons[joystick_btn_arm_brace-1]) {
-          carmen_era_publish_joint_cmd(
+          carmen_era_publish_joint_cmd_message(
             carmen_degrees_to_radians(0.0),
             carmen_degrees_to_radians(10.0), 
             carmen_degrees_to_radians(0.0), 
