@@ -14,6 +14,6 @@ PUBLIC_BINARIES = joyrobox
 
 TARGETS = joyrobox
 
-joyrobox: joyrobox.o joyctrl.o
+joyrobox: joyrobox.o joyctrl.o ../era/libera_interface.a
 
 include $(CARMEN_HOME)/src/Makefile.rules

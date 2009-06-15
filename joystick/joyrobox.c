@@ -20,12 +20,15 @@
 
 #include <carmen/carmen.h>
 #include <carmen/joyctrl.h>
+#include <carmen/era_interface.h>
 
 char* joystick_dev;
 int joystick_axis_long;
 int joystick_axis_lat;
 int joystick_btn_deadman;
 int joystick_btn_activate;
+int joystick_btn_arm_close;
+int joystick_btn_arm_brace;
 
 double robot_max_tv;
 double robot_max_rv;
@@ -70,7 +73,6 @@ void sig_handler(int x) {
 
 void read_parameters(int argc, char **argv) {
   int num_params;
-  char* btn_deadman;
   
   carmen_param_t param_list[] = {
     {"joystick", "dev", CARMEN_PARAM_STRING, &joystick_dev, 0, NULL},
@@ -78,10 +80,14 @@ void read_parameters(int argc, char **argv) {
       0, NULL},
     {"joystick", "axis_lateral", CARMEN_PARAM_INT, &joystick_axis_lat, 
       0, NULL},
-    {"joystick", "button_deadman", CARMEN_PARAM_STRING, &btn_deadman, 
+    {"joystick", "button_deadman", CARMEN_PARAM_INT, &joystick_btn_deadman, 
       0, NULL},
     {"joystick", "button_activate", CARMEN_PARAM_INT, &joystick_btn_activate, 
       0, NULL},
+    {"joystick", "button_arm_close", CARMEN_PARAM_INT, &joystick_btn_arm_close, 
+      0, NULL},
+    {"joystick", "button_arm_brace", CARMEN_PARAM_INT, 
+      &joystick_btn_arm_brace, 0, NULL},
 
     {"robot", "max_t_vel", CARMEN_PARAM_DOUBLE, &robot_max_tv, 0, NULL},
     {"robot", "max_r_vel", CARMEN_PARAM_DOUBLE, &robot_max_rv, 0, NULL}
@@ -89,9 +95,6 @@ void read_parameters(int argc, char **argv) {
   
   num_params = sizeof(param_list)/sizeof(param_list[0]);
   carmen_param_install_params(argc, argv, param_list, num_params);
-
-  if (sscanf(btn_deadman, "%d", &joystick_btn_deadman) < 1)
-    joystick_btn_deadman = -1;
 }
 
 int main(int argc, char **argv) {
@@ -114,8 +117,11 @@ int main(int argc, char **argv) {
   fprintf(stderr,"1. Center the joystick.\n");
   fprintf(stderr,"2. Press button \"%d\" to activate/deactivate the "
     "joystick.\n", joystick_btn_activate);
+  fprintf(stderr,"3. Press button \"%d\" to close in the arm,\n"
+                 "   button \"%d\" to brace the arm." , 
+    joystick_btn_arm_close, joystick_btn_arm_brace);
   if (joystick_btn_deadman > 0)
-    fprintf(stderr,"3. Hold button \"%d\" to keep the robot moving.\n\n", 
+    fprintf(stderr,"4. Hold button \"%d\" to keep the robot moving.\n\n", 
       joystick_btn_deadman);
 
   timestamp = carmen_get_time();
@@ -132,6 +138,14 @@ int main(int argc, char **argv) {
         }
         else
           fprintf(stderr,"Joystick activated.\n");
+      }
+      else if (joystick.buttons[joystick_btn_arm_close-1]) {
+        carmen_era_publish_joint_cmd(0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.5,
+          carmen_get_time());
+      }
+      else if (joystick.buttons[joystick_btn_arm_brace-1]) {
+        carmen_era_publish_joint_cmd(0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.5,
+          carmen_get_time());
       }
 
       if (joystick_activated) {
