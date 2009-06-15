@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
   fprintf(stderr,"2. Press button \"%d\" to activate/deactivate the "
     "joystick.\n", joystick_btn_activate);
   fprintf(stderr,"3. Press button \"%d\" to close in the arm,\n"
-                 "   button \"%d\" to brace the arm." , 
+                 "   button \"%d\" to brace the arm.\n" , 
     joystick_btn_arm_close, joystick_btn_arm_brace);
   if (joystick_btn_deadman > 0)
     fprintf(stderr,"4. Hold button \"%d\" to keep the robot moving.\n\n", 
@@ -139,14 +139,6 @@ int main(int argc, char **argv) {
         else
           fprintf(stderr,"Joystick activated.\n");
       }
-      else if (joystick.buttons[joystick_btn_arm_close-1]) {
-        carmen_era_publish_joint_cmd(0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.5,
-          carmen_get_time());
-      }
-      else if (joystick.buttons[joystick_btn_arm_brace-1]) {
-        carmen_era_publish_joint_cmd(0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.5,
-          carmen_get_time());
-      }
 
       if (joystick_activated) {
         if ((joystick_btn_deadman <= 0) || 
@@ -162,6 +154,27 @@ int main(int argc, char **argv) {
         }
 
         send_base_velocity_command(cmd_tv, cmd_rv);
+
+        if (joystick.buttons[joystick_btn_arm_close-1]) {
+          carmen_era_publish_joint_cmd(
+            carmen_degrees_to_radians(0.0),
+            carmen_degrees_to_radians(1.0), 
+            carmen_degrees_to_radians(0.0), 
+            carmen_degrees_to_radians(2.5), 
+            carmen_degrees_to_radians(-1.0), 
+            carmen_degrees_to_radians(0.0), 
+            0.5, carmen_get_time());
+        }
+        else if (joystick.buttons[joystick_btn_arm_brace-1]) {
+          carmen_era_publish_joint_cmd(
+            carmen_degrees_to_radians(0.0),
+            carmen_degrees_to_radians(10.0), 
+            carmen_degrees_to_radians(0.0), 
+            carmen_degrees_to_radians(25.0), 
+            carmen_degrees_to_radians(-10.0), 
+            carmen_degrees_to_radians(0.0), 
+            0.5, carmen_get_time());
+        }
       }
     }
     else if (joystick_activated && carmen_get_time()-timestamp > 0.5) {
