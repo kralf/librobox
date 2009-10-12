@@ -119,8 +119,14 @@ int main(int argc, char **argv) {
     joystick.nb_axes, joystick.nb_buttons);
  
   fprintf(stderr,"1. Center the joystick.\n");
-  fprintf(stderr,"2. Press button \"%d\" to activate/deactivate the "
-    "joystick.\n", joystick_btn_activate);
+  if (joystick_btn_activate <= 0) {
+    fprintf(stderr,"2. The joystick is activated.\n");
+    joystick_activated = 1;
+  }
+  else {
+    fprintf(stderr,"2. Press button \"%d\" to activate/deactivate the "
+      "joystick.\n", joystick_btn_activate);
+  }
   fprintf(stderr,"3. Press button \"%d\" to close in the arm,\n"
                  "   button \"%d\" to brace the arm.\n"
                  "   button \"%d\" to stop the arm.\n", 
@@ -134,7 +140,8 @@ int main(int argc, char **argv) {
     carmen_ipc_sleep(0.01);
 
     if (carmen_get_joystick_state(&joystick) >= 0) {
-      if (joystick.buttons[joystick_btn_activate-1]) {
+      if ((joystick_btn_activate > 0) &&
+        joystick.buttons[joystick_btn_activate-1]) {
         joystick_activated = !joystick_activated;
 
         if (!joystick_activated) {
