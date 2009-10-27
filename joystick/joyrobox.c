@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
         if ((joystick_btn_deadman <= 0) || 
           joystick.buttons[joystick_btn_deadman-1]) {
           cmd_tv = (joystick.axes[joystick_axis_long]) ?
-            joystick.axes[joystick_axis_long]/32767.0*robot_max_tv : 0.0;
+            -joystick.axes[joystick_axis_long]/32767.0*robot_max_tv : 0.0;
           cmd_rv = (joystick.axes[joystick_axis_lat]) ?
             joystick.axes[joystick_axis_lat]/32767.0*robot_max_rv : 0.0;
         }
