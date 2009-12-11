@@ -21,18 +21,12 @@
 #define CRC16_GEN_POL0                   0x80
 #define CRC16_GEN_POL1                   0x05
 
-#ifdef USE_TCP862
-#include <carmen/tcp862_serial.h>
+#include "tcp862_serial.h"
+
 #define serial_configure(_fd, _baudrate, _parity) tcp862_setBaud(_fd,_baudrate)
 #define serial_readn(_fd,_buf,_size)   tcp862_readn(_fd,_buf,_size)
 #define serial_writen(_fd,_buf,_size)  tcp862_writen(_fd,_buf,_size)
 #define serial_ClearInputBuffer(_fd) tcp862_clearInputBuffer(_fd)
-#else
-#define serial_configure(_fd, _baudrate, _parity)  carmen_serial_configure(_fd, _baudrate, _parity)
-#define serial_readn(_fd,_buf,_size)  carmen_serial_readn(_fd,_buf,_size)
-#define serial_writen(_fd,_buf,_size) carmen_serial_writen(_fd,_buf,_size)
-#define serial_ClearInputBuffer(_fd)  carmen_serial_ClearInputBuffer(_fd)
-#endif
 
 
 //helper functions for reading packets.
@@ -349,9 +343,7 @@ int sick_test_baudrate(sick_laser_t* sick, int max_retries){
   for (i=0; i<baudrates_no; i++){
     int j=0;
     serial_configure(sick->fd, baudrates[i], "8N1");
-#ifdef USE_TCP862
     tcp862_setBaud(sick->fd, baudrates[i]);
-#endif
     fprintf (stderr, "%d ", baudrates[i]);
     while(j<max_retries){
       j++;
