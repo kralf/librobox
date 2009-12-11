@@ -7,21 +7,21 @@
  * Roy, Sebastian Thrun, Dirk Haehnel, Cyrill Stachniss,
  * and Jared Glover
  *
- * CARMEN is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public
- * License as published by the Free Software Foundation;
+ * CARMEN is free software; you can redistribute it and/or 
+ * modify it under the terms of the GNU General Public 
+ * License as published by the Free Software Foundation; 
  * either version 2 of the License, or (at your option)
  * any later version.
  *
  * CARMEN is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied
+ * but WITHOUT ANY WARRANTY; without even the implied 
  * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more
+ * PURPOSE.  See the GNU General Public License for more 
  * details.
  *
- * You should have received a copy of the GNU General
+ * You should have received a copy of the GNU General 
  * Public License along with Foobar; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place,
+ * Free Software Foundation, Inc., 59 Temple Place, 
  * Suite 330, Boston, MA  02111-1307 USA
  *
  ********************************************************/
@@ -30,7 +30,7 @@
 #include <carmen/drive_low_level.h>
 
 #ifdef BASE_HAS_ARM
-#include <carmen/arm_messages.h>
+#include <carmen/arm_messages.h> 
 #include "arm_low_level.h"
 #endif
 
@@ -70,20 +70,20 @@ static int num_arm_joints;
 static carmen_arm_state_message arm_state;
 #endif
 
-static int
+static int 
 initialize_robot(void)
 {
   int result;
 
   result = carmen_base_direct_initialize_robot
     (model_name, dev_name);
-  if (result < 0)
+  if (result < 0) 
     return -1;
-
+  
 
   if (use_sonar) {
     num_sonar_ranges = carmen_base_direct_sonar_on();
-    if(num_sonar_ranges < 0)
+    if(num_sonar_ranges < 0) 
       return -1;
     if (sonar.range != NULL)
       free(sonar.range);
@@ -92,12 +92,12 @@ initialize_robot(void)
     sonar_state = 1;
   } else {
     result = carmen_base_direct_sonar_off();
-    if(result < 0)
+    if(result < 0) 
       return -1;
   }
 
   result = carmen_base_direct_reset();
-  if (result < 0)
+  if (result < 0) 
     return -1;
 
   reset_time = carmen_get_time();
@@ -105,7 +105,7 @@ initialize_robot(void)
 
   binary_data.host = carmen_get_host();
   binary_data.size = 0;
-
+  
   return 0;
 }
 
@@ -122,7 +122,7 @@ static void arm_command_handler(MSG_INSTANCE msgRef, BYTE_ARRAY callData,
   err = IPC_unmarshallData(formatter, callData, &msg,
 			   sizeof(carmen_arm_command_message));
   IPC_freeByteArray(callData);
-
+  
   if (msg.num_joints > 0) {
     carmen_arm_direct_set(msg.joint_angles, msg.num_joints);
     free(msg.joint_angles);
@@ -136,8 +136,8 @@ static void arm_query_handler(MSG_INSTANCE msgRef, BYTE_ARRAY callData,
 
   IPC_freeByteArray(callData);
 
-  if (num_arm_joints > 0)
-    carmen_arm_direct_get_state(arm_state.joint_angles,
+  if (num_arm_joints > 0) 
+    carmen_arm_direct_get_state(arm_state.joint_angles, 
 				arm_state.joint_currents,
 				arm_state.joint_angular_vels,
 				&arm_state.gripper_closed, num_arm_joints);
@@ -151,7 +151,7 @@ static void initialize_arm_message(void)
 {
   int err;
 
-  carmen_param_allow_unfound_variables(FALSE);
+  carmen_param_allow_unfound_variables(FALSE); 
   err = carmen_param_get_int("arm_num_joints", &num_arm_joints, NULL);
   if (err < 0)
     carmen_die("\nThe base_has_arm parameter is on, but the arm_num_joints "
@@ -184,21 +184,21 @@ static void initialize_arm_message(void)
 
   err = IPC_defineMsg(CARMEN_ARM_QUERY_NAME, IPC_VARIABLE_LENGTH,
                       CARMEN_DEFAULT_MESSAGE_FMT);
-  carmen_test_ipc_exit(err, "Could not define",
+  carmen_test_ipc_exit(err, "Could not define", 
 		       CARMEN_ARM_QUERY_NAME);
 
   err = IPC_defineMsg(CARMEN_ARM_STATE_NAME, IPC_VARIABLE_LENGTH,
                       CARMEN_ARM_STATE_FMT);
-  carmen_test_ipc_exit(err, "Could not define",
+  carmen_test_ipc_exit(err, "Could not define", 
 		       CARMEN_ARM_STATE_NAME);
 
   err = IPC_subscribe(CARMEN_ARM_COMMAND_NAME, arm_command_handler, NULL);
-  carmen_test_ipc_exit(err, "Could not subscribe",
+  carmen_test_ipc_exit(err, "Could not subscribe", 
 		       CARMEN_ARM_COMMAND_NAME);
   IPC_setMsgQueueLength(CARMEN_ARM_COMMAND_NAME, 1);
 
   err = IPC_subscribe(CARMEN_ARM_QUERY_NAME, arm_query_handler, NULL);
-  carmen_test_ipc_exit(err, "Could not subscribe",
+  carmen_test_ipc_exit(err, "Could not subscribe", 
                        CARMEN_ARM_QUERY_NAME);
   IPC_setMsgQueueLength(CARMEN_ARM_QUERY_NAME, 100);
 }
@@ -218,7 +218,7 @@ initialize_sonar_message(carmen_base_sonar_message *sonar)
     num_sonar_ranges = carmen_base_direct_sonar_on();
     if (num_sonar_ranges < 0)
       initialize_robot();
-  }
+  } 
   while (num_sonar_ranges < 0);
 
   if (sonar->range)
@@ -234,8 +234,8 @@ initialize_sonar_message(carmen_base_sonar_message *sonar)
 }
 
 static void
-handle_sonar_change(char *module __attribute__ ((unused)),
-		    char *variable __attribute__ ((unused)),
+handle_sonar_change(char *module __attribute__ ((unused)), 
+		    char *variable __attribute__ ((unused)), 
 		    char *value __attribute__ ((unused)))
 {
   int err;
@@ -261,26 +261,26 @@ read_parameters(int argc, char **argv)
     {"base", "dev", CARMEN_PARAM_STRING, &dev_name, 0, NULL},
     {"base", "model", CARMEN_PARAM_STRING, &model_name, 0, NULL},
     {"base", "motion_timeout", CARMEN_PARAM_DOUBLE, &motion_timeout, 0, NULL},
-    {"base", "use_hardware_integrator", CARMEN_PARAM_ONOFF,
+    {"base", "use_hardware_integrator", CARMEN_PARAM_ONOFF, 
      &use_hardware_integrator, 0, NULL},
-    {"robot", "odometry_inverted", CARMEN_PARAM_ONOFF, &odometry_inverted,
+    {"robot", "odometry_inverted", CARMEN_PARAM_ONOFF, &odometry_inverted, 
      0, NULL},
-    {"robot", "use_sonar", CARMEN_PARAM_ONOFF, &use_sonar, 1, handle_sonar_change},
-    {"robot", "use_bumper", CARMEN_PARAM_ONOFF, &use_bumper, 0, NULL},
-    {"robot", "acceleration", CARMEN_PARAM_DOUBLE,
+    {"robot", "use_sonar", CARMEN_PARAM_ONOFF, &use_sonar, 1, handle_sonar_change}, 
+    {"robot", "use_bumper", CARMEN_PARAM_ONOFF, &use_bumper, 0, NULL}, 
+    {"robot", "acceleration", CARMEN_PARAM_DOUBLE, 
      &(robot_config.acceleration), 1, NULL},
-    {"robot", "deceleration", CARMEN_PARAM_DOUBLE,
+    {"robot", "deceleration", CARMEN_PARAM_DOUBLE, 
      &(deceleration), 1, NULL}};
 
   carmen_param_t extra_params[] = {
-    {"base", "relative_wheelsize", CARMEN_PARAM_DOUBLE,
+    {"base", "relative_wheelsize", CARMEN_PARAM_DOUBLE, 
      &relative_wheelsize, 0, NULL},
-    {"base", "relative_wheelbase", CARMEN_PARAM_DOUBLE,
+    {"base", "relative_wheelbase", CARMEN_PARAM_DOUBLE, 
      &relative_wheelbase, 0, NULL},
   };
 
   carmen_param_t bumper_params[] = {
-    {"robot", "bumper_offsets", CARMEN_PARAM_STRING,
+    {"robot", "bumper_offsets", CARMEN_PARAM_STRING, 
      &bumper_offset_string, 0, NULL},
   };
 
@@ -298,21 +298,21 @@ read_parameters(int argc, char **argv)
 
   if (!use_hardware_integrator) {
     num_items = sizeof(extra_params)/sizeof(extra_params[0]);
-    carmen_param_install_params(argc, argv, extra_params, num_items);
+    carmen_param_install_params(argc, argv, extra_params, num_items);      
   }
 
-#ifdef BASE_HAS_ARM
+#ifdef BASE_HAS_ARM  
   initialize_arm_message();
 #endif
 
-  if (robot_config.acceleration > deceleration)
+  if (robot_config.acceleration > deceleration) 
     carmen_die("ERROR: robot_deceleration must be greater or equal than "
 	       "robot_acceleration\n");
-
+  
   return 0;
 }
 
-static void
+static void 
 velocity_handler(MSG_INSTANCE msgRef, BYTE_ARRAY callData,
 		 void *clientData __attribute__ ((unused)))
 {
@@ -326,55 +326,55 @@ velocity_handler(MSG_INSTANCE msgRef, BYTE_ARRAY callData,
                      sizeof(carmen_base_velocity_message));
   IPC_freeByteArray(callData);
 
-  carmen_test_ipc_return(err, "Could not unmarshall",
+  carmen_test_ipc_return(err, "Could not unmarshall", 
 			 IPC_msgInstanceName(msgRef));
 
-  if(vel.tv == 0 && vel.rv == 0)
+  if(vel.tv == 0 && vel.rv == 0) 
     {
-      if (moving)
+      if (moving) 
 	{
-	  do
+	  do 
 	    {
 	      base_err = carmen_base_direct_set_deceleration(deceleration);
 	      if (base_err < 0)
 		initialize_robot();
-	    }
+	    } 
 	  while (base_err < 0);
 	  moving = 0;
 	}
       carmen_warn("S");
     }
-  else if (!moving)
+  else if (!moving) 
     {
       moving = 1;
       current_acceleration = robot_config.acceleration;
-      do
+      do 
 	{
 	  base_err = carmen_base_direct_set_acceleration(current_acceleration);
 	  if (base_err < 0)
 	    initialize_robot();
-	}
+	} 
       while (base_err < 0);
       carmen_warn("V");
-    }
+    }  
 
   if (odometry_inverted)
     vel.tv *= -1;
   if (!use_hardware_integrator)
     {
       vel.tv /= relative_wheelsize;
-
+      
       vel.rv /= relative_wheelsize;
       vel.rv /= relative_wheelbase;
     }
 
-  do
+  do 
     {
       base_err = carmen_base_direct_set_velocity(vel.tv, vel.rv);
       last_motion_command = carmen_get_time();
       if (base_err < 0)
 	initialize_robot();
-    }
+    } 
   while (base_err < 0);
 }
 
@@ -392,23 +392,23 @@ binary_command_handler(MSG_INSTANCE msgRef, BYTE_ARRAY callData,
                            sizeof(carmen_base_binary_data_message));
   IPC_freeByteArray(callData);
 
-  carmen_test_ipc_return(err, "Could not unmarshall",
+  carmen_test_ipc_return(err, "Could not unmarshall", 
                          IPC_msgInstanceName(msgRef));
 
   if (msg.size > 0)
     {
-      do
+      do 
 	{
 	  base_err = carmen_base_direct_send_binary_data(msg.data, msg.size);
 	  if (base_err < 0)
 	    initialize_robot();
-	}
+	} 
       while (base_err < 0);
       free(msg.data);
     }
 }
 
-static void
+static void 
 reset_odometry()
 {
   printf("Odometry Reset...\n");
@@ -417,7 +417,7 @@ reset_odometry()
   odometry.theta=0;
 }
 
-static void reset_handler(MSG_INSTANCE msgRef __attribute__ ((unused)),
+static void reset_handler(MSG_INSTANCE msgRef __attribute__ ((unused)), 
 			  BYTE_ARRAY callData,
 			  void *clientData __attribute__ ((unused)))
 {
@@ -434,7 +434,7 @@ static void reset_handler(MSG_INSTANCE msgRef __attribute__ ((unused)),
   } while (base_err < 0);
 }
 
-int
+int 
 carmen_base_initialize_ipc(void)
 {
   IPC_RETURN_TYPE err;
@@ -446,12 +446,12 @@ carmen_base_initialize_ipc(void)
 
   err = IPC_defineMsg(CARMEN_BASE_SONAR_NAME, IPC_VARIABLE_LENGTH,
                       CARMEN_BASE_SONAR_FMT);
-  carmen_test_ipc_exit(err, "Could not define IPC message",
+  carmen_test_ipc_exit(err, "Could not define IPC message", 
 		       CARMEN_BASE_SONAR_NAME);
 
   err = IPC_defineMsg(CARMEN_BASE_BUMPER_NAME, IPC_VARIABLE_LENGTH,
                       CARMEN_BASE_BUMPER_FMT);
-  carmen_test_ipc_exit(err, "Could not define IPC message",
+  carmen_test_ipc_exit(err, "Could not define IPC message", 
 		       CARMEN_BASE_BUMPER_NAME);
 
   err = IPC_defineMsg(CARMEN_BASE_VELOCITY_NAME, IPC_VARIABLE_LENGTH,
@@ -464,19 +464,19 @@ carmen_base_initialize_ipc(void)
 
   err = IPC_defineMsg(CARMEN_BASE_RESET_COMMAND_NAME, IPC_VARIABLE_LENGTH,
                       CARMEN_DEFAULT_MESSAGE_FMT);
-  carmen_test_ipc_exit(err, "Could not define",
+  carmen_test_ipc_exit(err, "Could not define", 
 		       CARMEN_BASE_RESET_COMMAND_NAME);
 
-  err = IPC_defineMsg(CARMEN_BASE_BINARY_COMMAND_NAME,
+  err = IPC_defineMsg(CARMEN_BASE_BINARY_COMMAND_NAME, 
                       IPC_VARIABLE_LENGTH,
                       CARMEN_BASE_BINARY_COMMAND_FMT);
-  carmen_test_ipc_exit(err, "Could not define",
+  carmen_test_ipc_exit(err, "Could not define", 
                        CARMEN_BASE_BINARY_COMMAND_NAME);
 
-  err = IPC_defineMsg(CARMEN_BASE_BINARY_DATA_NAME,
+  err = IPC_defineMsg(CARMEN_BASE_BINARY_DATA_NAME, 
                       IPC_VARIABLE_LENGTH,
                       CARMEN_BASE_BINARY_DATA_FMT);
-  carmen_test_ipc_exit(err, "Could not define",
+  carmen_test_ipc_exit(err, "Could not define", 
                        CARMEN_BASE_BINARY_DATA_NAME);
 
   /* setup incoming message handlers */
@@ -486,20 +486,20 @@ carmen_base_initialize_ipc(void)
   IPC_setMsgQueueLength(CARMEN_BASE_VELOCITY_NAME, 1);
 
   err = IPC_subscribe(CARMEN_BASE_RESET_COMMAND_NAME, reset_handler, NULL);
-  carmen_test_ipc_exit(err, "Could not subscribe",
+  carmen_test_ipc_exit(err, "Could not subscribe", 
 		       CARMEN_BASE_RESET_COMMAND_NAME);
   IPC_setMsgQueueLength(CARMEN_BASE_RESET_COMMAND_NAME, 1);
 
-  err = IPC_subscribe(CARMEN_BASE_BINARY_COMMAND_NAME,
+  err = IPC_subscribe(CARMEN_BASE_BINARY_COMMAND_NAME, 
                       binary_command_handler, NULL);
-  carmen_test_ipc_exit(err, "Could not subscribe",
+  carmen_test_ipc_exit(err, "Could not subscribe", 
                        CARMEN_BASE_BINARY_COMMAND_NAME);
   IPC_setMsgQueueLength(CARMEN_BASE_BINARY_COMMAND_NAME, 1);
 
   return IPC_No_Error;
 }
 
-int
+int 
 carmen_base_start(int argc, char **argv)
 {
   if (read_parameters(argc, argv) < 0)
@@ -509,7 +509,7 @@ carmen_base_start(int argc, char **argv)
     carmen_warn("\nError: Could not initialize IPC.\n");
     return -1;
   }
-
+  
   if(initialize_robot() < 0) {
     carmen_warn("\nError: Could not connect to robot on %s. "
 		"Did you remember to turn the base on?\n", dev_name);
@@ -530,10 +530,10 @@ integrate_odometry(double displacement, double rotation, double tv, double rv)
   displacement *= relative_wheelsize;
   rotation *= relative_wheelsize;
   rotation *= relative_wheelbase;
-
+      
   odometry.tv = tv * relative_wheelsize;
   odometry.rv = rv * relative_wheelsize / relative_wheelbase;
-
+  
   if (odometry_inverted) {
     odometry.tv *= -1;
     displacement *= -1;
@@ -546,18 +546,18 @@ integrate_odometry(double displacement, double rotation, double tv, double rv)
   odometry.x += displacement * cos (odometry.theta);
   odometry.y += displacement * sin (odometry.theta);
   */
-
+  
   odometry.x += displacement * cos (odometry.theta+0.5*rotation);
   odometry.y += displacement * sin (odometry.theta+0.5*rotation);
   odometry.theta = carmen_normalize_theta(odometry.theta+rotation);
 }
 
 
-int
-carmen_base_run(void)
+int 
+carmen_base_run(void) 
 {
   IPC_RETURN_TYPE err;
-  static carmen_base_reset_occurred_message reset = {0, 0};
+  static carmen_base_reset_occurred_message reset = {0, 0};  
   int base_err;
   double tv=0, rv=0;
   double displacement=0, rotation=0;
@@ -567,24 +567,24 @@ carmen_base_run(void)
     reset.timestamp = reset_time;
     reset.host = carmen_get_host();
     err = IPC_publishData(CARMEN_BASE_RESET_OCCURRED_NAME, &reset);
-    carmen_test_ipc_exit(err, "Could not publish", CARMEN_BASE_RESET_OCCURRED_NAME);
+    carmen_test_ipc_exit(err, "Could not publish", CARMEN_BASE_RESET_OCCURRED_NAME);  
     return 1;
-  }
+  }  
 
   if (moving && carmen_get_time() - last_motion_command > motion_timeout) {
     moving = 0;
-    carmen_warn("t");
+    carmen_warn("t");      
     do {
       base_err = carmen_base_direct_set_deceleration(deceleration);
       if (base_err < 0)
 	initialize_robot();
     } while (base_err < 0);
-    carmen_warn("T");
+    carmen_warn("T");      
     do {
       base_err = carmen_base_direct_set_velocity(0, 0);
       if (base_err < 0)
 	initialize_robot();
-    } while (base_err < 0);
+    } while (base_err < 0);      
   }
 
   do {
@@ -596,7 +596,7 @@ carmen_base_run(void)
     	odometry.timestamp = packet_timestamp;
     if (base_err < 0)
       initialize_robot();
-  } while (base_err < 0);
+  } while (base_err < 0); 
 
   carmen_base_direct_get_binary_data(&(binary_data.data), &(binary_data.size));
   binary_data.host = carmen_get_host();
@@ -620,7 +620,7 @@ carmen_base_run(void)
 	integrate_odometry(displacement, rotation, tv, rv);
     } else {
       base_err = carmen_base_direct_get_integrated_state
-	(&(odometry.x), &(odometry.y), &(odometry.theta), &(odometry.tv),
+	(&(odometry.x), &(odometry.y), &(odometry.theta), &(odometry.tv), 
 	 &(odometry.rv));
       if (base_err < 0)
 	initialize_robot();
@@ -638,22 +638,22 @@ carmen_base_run(void)
     carmen_base_direct_get_sonars(sonar.range, NULL, num_sonar_ranges);
     sonar.num_sonars = num_sonar_ranges;
   }
-
+  
   err = IPC_publishData(CARMEN_BASE_ODOMETRY_NAME, &odometry);
-  carmen_test_ipc_exit(err, "Could not publish",
+  carmen_test_ipc_exit(err, "Could not publish", 
 		       CARMEN_BASE_ODOMETRY_NAME);
-
+  
   if (use_sonar) {
-    carmen_warn("s");
+    carmen_warn("s");  
     sonar.timestamp = carmen_get_time();
     sonar.host = carmen_get_host();
     err = IPC_publishData(CARMEN_BASE_SONAR_NAME, &sonar);
-    carmen_test_ipc_exit(err, "Could not publish",
+    carmen_test_ipc_exit(err, "Could not publish", 
 			 CARMEN_BASE_SONAR_NAME);
-  }
+  } 
 
   if (use_bumper) {
-    bumper.num_bumpers =
+    bumper.num_bumpers = 
       carmen_base_direct_get_bumpers(bumper.state, bumper.num_bumpers);
     if (bumper.state == NULL && bumper.num_bumpers > 0) {
       bumper.state = (unsigned char *)calloc(bumper.num_bumpers, sizeof(char));
@@ -666,20 +666,20 @@ carmen_base_run(void)
     }
 
     if (bumper.num_bumpers > 0) {
-      carmen_warn("b");
+      carmen_warn("b"); 
       bumper.timestamp = carmen_get_time();
       bumper.host = carmen_get_host();
       err = IPC_publishData(CARMEN_BASE_BUMPER_NAME, &bumper);
-      carmen_test_ipc_exit(err, "Could not publish",
+      carmen_test_ipc_exit(err, "Could not publish", 
           CARMEN_BASE_BUMPER_NAME);
     }
   }
 
 #if BASE_HAS_ARM
-  if (num_arm_joints > 0)
-    carmen_arm_direct_get_state(arm_state.joint_angles,
+  if (num_arm_joints > 0) 
+    carmen_arm_direct_get_state(arm_state.joint_angles, 
 				arm_state.joint_currents,
-				arm_state.joint_angular_vels,
+				arm_state.joint_angular_vels, 
 				&arm_state.gripper_closed, num_arm_joints);
 
   arm_state.timestamp = carmen_get_time();
@@ -690,7 +690,7 @@ carmen_base_run(void)
   return 1;
 }
 
-void
+void 
 carmen_base_shutdown(void)
 {
   carmen_verbose("\nShutting down robot...");
@@ -702,7 +702,7 @@ carmen_base_shutdown(void)
   exit(0);
 }
 
-void
+void 
 carmen_base_emergency_crash(int x __attribute__ ((unused)))
 {
   carmen_base_direct_set_velocity(0.0, 0.0);
@@ -714,7 +714,7 @@ shutdown_base(int signo __attribute__ ((unused)))
   carmen_base_shutdown();
 }
 
-int
+int 
 main(int argc, char **argv)
 {
   carmen_erase_structure(&bumper, sizeof(bumper));

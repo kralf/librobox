@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <timer.h>
+#include <tulibs/timer.h>
 
 #include "control.h"
 
@@ -34,7 +34,7 @@ const char* robox_control_errors[] = {
 };
 
 void robox_control_init(robox_control_p control, robox_encoders_p encoders,
-  robox_motors_p motors, robox_drive_p drive, double p_gain, double i_gain, 
+  robox_motors_p motors, robox_drive_p drive, double p_gain, double i_gain,
   double d_gain) {
   control->encoders = encoders;
   control->motors = motors;
@@ -67,7 +67,7 @@ int robox_control_iterate(robox_control_p control, robox_drive_vel_p set_vel) {
   robox_encoders_vel_t enc_vel, enc_set_vel, enc_acc;
   double dt = (control->timestamp > 0.0) ? timer_stop(control->timestamp) : 0.0;
 
-  if (!robox_encoders_get_velocity(control->encoders,  &control->enc_pos, 
+  if (!robox_encoders_get_velocity(control->encoders,  &control->enc_pos,
       dt, &enc_vel)) {
     if (dt > 0.0) {
       enc_acc.right = (enc_vel.right-control->enc_vel.right)/dt;
@@ -77,7 +77,7 @@ int robox_control_iterate(robox_control_p control, robox_drive_vel_p set_vel) {
       memset(&enc_vel, 0, sizeof(robox_encoders_vel_t));
       memset(&enc_acc, 0, sizeof(robox_encoders_vel_t));
     }
-    
+
     robox_drive_velocity_to_encoders(control->drive, set_vel, &enc_set_vel);
     control->enc_vel_error.right += enc_set_vel.right-enc_vel.right;
     control->enc_vel_error.left += enc_set_vel.left-enc_vel.left;

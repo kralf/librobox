@@ -20,7 +20,10 @@
 
 #include <carmen/carmen.h>
 #include <carmen/joyctrl.h>
+
+#ifdef WITH_ERA
 #include <carmen/era_interface.h>
+#endif
 
 char* joystick_dev;
 int joystick_axis_long;
@@ -57,14 +60,15 @@ void send_base_velocity_command(double tv, double rv) {
     v.rv = -robot_max_rv;
 
   err = IPC_publishData(CARMEN_BASE_VELOCITY_NAME, &v);
-  carmen_test_ipc(err, "Could not publish", CARMEN_BASE_VELOCITY_NAME);  
+  carmen_test_ipc(err, "Could not publish", CARMEN_BASE_VELOCITY_NAME);
 }
 
 void sig_handler(int x) {
   if (x == SIGINT) {
     send_base_velocity_command(0.0, 0.0);
+#ifdef WITH_ERA
     carmen_era_publish_stop_message(carmen_get_time());
-
+#endif
     carmen_close_joystick(&joystick);
     carmen_ipc_disconnect();
 
@@ -75,28 +79,28 @@ void sig_handler(int x) {
 
 void read_parameters(int argc, char **argv) {
   int num_params;
-  
+
   carmen_param_t param_list[] = {
     {"joystick", "dev", CARMEN_PARAM_STRING, &joystick_dev, 0, NULL},
-    {"joystick", "axis_longitudinal", CARMEN_PARAM_INT, &joystick_axis_long, 
+    {"joystick", "axis_longitudinal", CARMEN_PARAM_INT, &joystick_axis_long,
       0, NULL},
-    {"joystick", "axis_lateral", CARMEN_PARAM_INT, &joystick_axis_lat, 
+    {"joystick", "axis_lateral", CARMEN_PARAM_INT, &joystick_axis_lat,
       0, NULL},
-    {"joystick", "button_deadman", CARMEN_PARAM_INT, &joystick_btn_deadman, 
+    {"joystick", "button_deadman", CARMEN_PARAM_INT, &joystick_btn_deadman,
       0, NULL},
-    {"joystick", "button_activate", CARMEN_PARAM_INT, &joystick_btn_activate, 
+    {"joystick", "button_activate", CARMEN_PARAM_INT, &joystick_btn_activate,
       0, NULL},
-    {"joystick", "button_arm_stop", CARMEN_PARAM_INT, &joystick_btn_arm_stop, 
+    {"joystick", "button_arm_stop", CARMEN_PARAM_INT, &joystick_btn_arm_stop,
       0, NULL},
-    {"joystick", "button_arm_close", CARMEN_PARAM_INT, &joystick_btn_arm_close, 
+    {"joystick", "button_arm_close", CARMEN_PARAM_INT, &joystick_btn_arm_close,
       0, NULL},
-    {"joystick", "button_arm_brace", CARMEN_PARAM_INT, 
+    {"joystick", "button_arm_brace", CARMEN_PARAM_INT,
       &joystick_btn_arm_brace, 0, NULL},
 
     {"robot", "max_t_vel", CARMEN_PARAM_DOUBLE, &robot_max_tv, 0, NULL},
     {"robot", "max_r_vel", CARMEN_PARAM_DOUBLE, &robot_max_rv, 0, NULL}
   };
-  
+
   num_params = sizeof(param_list)/sizeof(param_list[0]);
   carmen_param_install_params(argc, argv, param_list, num_params);
 }
@@ -112,12 +116,12 @@ int main(int argc, char **argv) {
 
   fprintf(stderr,"Looking for joystick at device: %s\n", joystick_dev);
 
-  if (carmen_initialize_joystick(&joystick, joystick_dev) < 0)
+  if (carmen_initialize_joystick_device(&joystick, joystick_dev) < 0)
     carmen_die("Error: could not find joystick at device: %s\n", joystick_dev);
   else
-    fprintf(stderr,"Joystick has %d axes and %d buttons\n\n", 
+    fprintf(stderr,"Joystick has %d axes and %d buttons\n\n",
     joystick.nb_axes, joystick.nb_buttons);
- 
+
   fprintf(stderr,"1. Center the joystick.\n");
   if (joystick_btn_activate <= 0) {
     fprintf(stderr,"2. The joystick is activated.\n");
@@ -129,10 +133,10 @@ int main(int argc, char **argv) {
   }
   fprintf(stderr,"3. Press button \"%d\" to close in the arm,\n"
                  "   button \"%d\" to brace the arm.\n"
-                 "   button \"%d\" to stop the arm.\n", 
+                 "   button \"%d\" to stop the arm.\n",
     joystick_btn_arm_close, joystick_btn_arm_brace, joystick_btn_arm_stop);
   if (joystick_btn_deadman > 0)
-    fprintf(stderr,"4. Hold button \"%d\" to keep the robot moving.\n\n", 
+    fprintf(stderr,"4. Hold button \"%d\" to keep the robot moving.\n\n",
       joystick_btn_deadman);
 
   timestamp = carmen_get_time();
@@ -146,8 +150,9 @@ int main(int argc, char **argv) {
 
         if (!joystick_activated) {
           send_base_velocity_command(0.0, 0.0);
+#ifdef WITH_ERA
           carmen_era_publish_stop_message(carmen_get_time());
-
+#endif
           fprintf(stderr,"Joystick deactivated.\n");
         }
         else
@@ -169,6 +174,7 @@ int main(int argc, char **argv) {
 
         send_base_velocity_command(cmd_tv, cmd_rv);
 
+#ifdef WITH_ERA
         if (joystick.buttons[joystick_btn_arm_stop-1]) {
           carmen_era_publish_stop_message(
             carmen_get_time());
@@ -176,23 +182,24 @@ int main(int argc, char **argv) {
         if (joystick.buttons[joystick_btn_arm_close-1]) {
           carmen_era_publish_joint_cmd_message(
             carmen_degrees_to_radians(0.0),
-            carmen_degrees_to_radians(1.0), 
-            carmen_degrees_to_radians(0.0), 
-            carmen_degrees_to_radians(2.5), 
-            carmen_degrees_to_radians(-1.0), 
-            carmen_degrees_to_radians(0.0), 
+            carmen_degrees_to_radians(1.0),
+            carmen_degrees_to_radians(0.0),
+            carmen_degrees_to_radians(2.5),
+            carmen_degrees_to_radians(-1.0),
+            carmen_degrees_to_radians(0.0),
             0.5, carmen_get_time());
         }
         else if (joystick.buttons[joystick_btn_arm_brace-1]) {
           carmen_era_publish_joint_cmd_message(
             carmen_degrees_to_radians(0.0),
-            carmen_degrees_to_radians(10.0), 
-            carmen_degrees_to_radians(0.0), 
-            carmen_degrees_to_radians(25.0), 
-            carmen_degrees_to_radians(-10.0), 
-            carmen_degrees_to_radians(0.0), 
+            carmen_degrees_to_radians(10.0),
+            carmen_degrees_to_radians(0.0),
+            carmen_degrees_to_radians(25.0),
+            carmen_degrees_to_radians(-10.0),
+            carmen_degrees_to_radians(0.0),
             0.5, carmen_get_time());
         }
+#endif
       }
     }
     else if (joystick_activated && carmen_get_time()-timestamp > 0.5) {
@@ -200,7 +207,7 @@ int main(int argc, char **argv) {
       timestamp = carmen_get_time();
     }
   }
-    
+
   sig_handler(SIGINT);
   return 0;
 }

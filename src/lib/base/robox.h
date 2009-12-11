@@ -21,8 +21,8 @@
 #ifndef ROBOX_H
 #define ROBOX_H
 
-#include <config.h>
-#include <thread.h>
+#include <tulibs/config.h>
+#include <tulibs/thread.h>
 
 #include "security.h"
 #include "power.h"

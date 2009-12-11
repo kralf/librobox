@@ -18,7 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <timer.h>
+#include <tulibs/timer.h>
 
 #include "odometry.h"
 
@@ -30,7 +30,7 @@ const char* robox_odometry_errors[] = {
   "error integrating odometry",
 };
 
-void robox_odometry_init(robox_odometry_p odometry, robox_encoders_p 
+void robox_odometry_init(robox_odometry_p odometry, robox_encoders_p
   encoders, robox_drive_p drive) {
   odometry->encoders = encoders;
   odometry->drive = drive;
@@ -53,19 +53,19 @@ int robox_odometry_start(robox_odometry_p odometry) {
 double robox_odometry_mod_2pi(double theta) {
     int n = floor(theta/(2.0*M_PI));
     theta -= n*(2.0*M_PI);
-    
+
     if (theta > M_PI)
       theta -= (2.0*M_PI);
 
     return theta;
 }
 
-int robox_odometry_integrate(robox_odometry_p odometry, robox_drive_pose_p 
+int robox_odometry_integrate(robox_odometry_p odometry, robox_drive_pose_p
   pose, robox_drive_vel_p velocity) {
   robox_encoders_vel_t enc_vel;
   double dt = timer_stop(odometry->timestamp);
 
-  if (!robox_encoders_get_velocity(odometry->encoders,  &odometry->enc_pos, 
+  if (!robox_encoders_get_velocity(odometry->encoders,  &odometry->enc_pos,
       dt, &enc_vel)) {
     robox_drive_velocity_from_encoders(odometry->drive, &enc_vel, velocity);
 

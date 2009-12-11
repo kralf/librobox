@@ -1,10 +1,12 @@
-#include "carmen_laser_device.h"
-#include "carmen_laser_message_queue.h"
-#include "laser_messages.h"
 #include <signal.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <math.h>
+
+#include <carmen/laser_messages.h>
+
+#include "carmen_laser_device.h"
+#include "carmen_laser_message_queue.h"
 
 
 carmen_laser_message_queue_t queue;
@@ -60,9 +62,9 @@ int main (int argc __attribute__((unused)), char** argv __attribute__((unused)))
 	//initialization_stuff
 
 	//this initializes the driver stuctures
-	camen_laser_register_devices();
+	carmen_laser_register_devices();
 	signal(SIGINT, sigquit_handler);
-	
+
 	//check whether the configuration is valid
 	int config_valid=carmen_laser_laser_message_check_configuration(&config);
 	if (! config_valid){
@@ -122,7 +124,7 @@ int main (int argc __attribute__((unused)), char** argv __attribute__((unused)))
 		//BEGIN CYRILL
 		//here you can senbd the data via IPC
 		//END CYRILL
-		
+
 		if (!(c%10)){
 			double time=m.timestamp;
 			fprintf(stderr, "(%d), %lf\n", m.num_readings, 11./(time-oldTime));
