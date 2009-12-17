@@ -69,9 +69,9 @@ int robox_odometry_integrate(robox_odometry_p odometry, robox_drive_pose_p
       dt, &enc_vel)) {
     robox_drive_velocity_from_encoders(odometry->drive, &enc_vel, velocity);
 
-    pose->theta = robox_odometry_mod_2pi(pose->theta+velocity->rotational*dt);
     pose->x += velocity->translational*dt*cos(pose->theta);
     pose->y += velocity->translational*dt*sin(pose->theta);
+    pose->theta = robox_odometry_mod_2pi(pose->theta+velocity->rotational*dt);
 
     timer_start(&odometry->timestamp);
 

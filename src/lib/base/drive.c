@@ -24,7 +24,7 @@
 
 #include "global.h"
 
-void robox_drive_init(robox_drive_p drive, double gear_trans, double 
+void robox_drive_init(robox_drive_p drive, double gear_trans, double
   wheel_base, double wheel_right_radius, double wheel_left_radius) {
   drive->gear_trans = gear_trans;
 
@@ -33,7 +33,7 @@ void robox_drive_init(robox_drive_p drive, double gear_trans, double
   drive->wheel_left_radius = wheel_left_radius;
 }
 
-void robox_drive_velocity_from_encoders(robox_drive_p drive, 
+void robox_drive_velocity_from_encoders(robox_drive_p drive,
   robox_encoders_vel_p enc_vel, robox_drive_vel_p drive_vel) {
   double omega_right = -drive->wheel_right_radius*enc_vel->right/
     drive->gear_trans;
@@ -41,10 +41,10 @@ void robox_drive_velocity_from_encoders(robox_drive_p drive,
     drive->gear_trans;
 
   drive_vel->translational = 0.5*(omega_right+omega_left);
-  drive_vel->rotational = (omega_right-omega_left)/drive->wheel_base;
+  drive_vel->rotational = (omega_left-omega_right)/drive->wheel_base;
 }
 
-void robox_drive_velocity_to_encoders(robox_drive_p drive, robox_drive_vel_p 
+void robox_drive_velocity_to_encoders(robox_drive_p drive, robox_drive_vel_p
   drive_vel, robox_encoders_vel_p enc_vel) {
   double omega_right = drive_vel->translational+0.5*drive->wheel_base*
     drive_vel->rotational;
