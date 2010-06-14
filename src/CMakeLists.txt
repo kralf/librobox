@@ -1,7 +1,7 @@
-remake_project_option(WITH_ERA "Embedded Robot Arm support" ON)
+remake_find_library(tulibs-timer timer.h PACKAGE tulibs)
+remake_find_library(tulibs-thread thread.h PACKAGE tulibs)
+remake_find_library(tulibs-config config.h PACKAGE tulibs)
 
-remake_define(REDHAT_52 ON)
-remake_define(REDHAT_6 ON)
-remake_define(REDHAT_71 ON)
-
-remake_add_directories()
+remake_add_library(robox_base LINK ${TULIBS_TIMER_LIBRARY}
+  ${TULIBS_THREAD_LIBRARY} ${TULIBS_CONFIG_LIBRARY})
+remake_add_headers()
