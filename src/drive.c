@@ -46,9 +46,9 @@ void robox_drive_velocity_from_encoders(robox_drive_p drive,
 
 void robox_drive_velocity_to_encoders(robox_drive_p drive, robox_drive_vel_p
   drive_vel, robox_encoders_vel_p enc_vel) {
-  double omega_right = drive_vel->translational+0.5*drive->wheel_base*
+  double omega_right = drive_vel->translational-0.5*drive->wheel_base*
     drive_vel->rotational;
-  double omega_left = drive_vel->translational-0.5*drive->wheel_base*
+  double omega_left = drive_vel->translational+0.5*drive->wheel_base*
     drive_vel->rotational;
 
   enc_vel->right = -drive->gear_trans*omega_right/drive->wheel_right_radius;
