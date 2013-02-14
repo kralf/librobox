@@ -30,3 +30,11 @@ remake_pack_deb(
   COMPONENT doc
   DESCRIPTION "documentation"
 )
+
+remake_distribute_deb(
+  DISTRIBUTION lucid
+  SECTION libs
+  UPLOAD ppa:kralf/asl
+  DEPENDS remake tulibs-dev doxygen
+  PASS CMAKE_BUILD_TYPE LIBROBOX_SUBVERSION_REVISION
+)
