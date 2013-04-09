@@ -19,11 +19,13 @@ remake_doc(
   html
 )
 
-remake_pack_deb(tulibs)
+remake_pack_deb(
+  DEPENDS tulibs
+)
 remake_pack_deb(
   COMPONENT dev
   DESCRIPTION "development headers"
-  librobox tulibs-dev
+  DEPENDS librobox tulibs-dev
 )
 remake_pack_deb(
   ARCH all
@@ -33,6 +35,13 @@ remake_pack_deb(
 
 remake_distribute_deb(
   DISTRIBUTION lucid
+  SECTION libs
+  UPLOAD ppa:kralf/asl
+  DEPENDS remake tulibs-dev doxygen
+  PASS CMAKE_BUILD_TYPE LIBROBOX_SUBVERSION_REVISION
+)
+remake_distribute_deb(
+  DISTRIBUTION precise
   SECTION libs
   UPLOAD ppa:kralf/asl
   DEPENDS remake tulibs-dev doxygen
