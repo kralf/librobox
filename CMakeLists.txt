@@ -9,7 +9,7 @@ remake_project(
   SUMMARY "C-based driver library for the RoboX platform."
   AUTHOR "Ralf Kaestner"
   CONTACT "ralf.kaestner@gmail.com"
-  HOME "http://aslforge.ethz.ch/projects/robox"
+  HOME "http://github.com/kralf/librobox"
   LICENSE "GNU Lesser General Public License (LGPL)"
   INSTALL /usr
   PREFIX robox-
@@ -38,12 +38,12 @@ remake_distribute_deb(
   SECTION libs
   UPLOAD ppa:kralf/asl
   DEPENDS remake tulibs-dev doxygen
-  PASS CMAKE_BUILD_TYPE LIBROBOX_SUBVERSION_REVISION
+  PASS CMAKE_BUILD_TYPE LIBROBOX_GIT_REVISION
 )
 remake_distribute_deb(
   DISTRIBUTION precise
   SECTION libs
   UPLOAD ppa:kralf/asl
   DEPENDS remake tulibs-dev doxygen
-  PASS CMAKE_BUILD_TYPE LIBROBOX_SUBVERSION_REVISION
+  PASS CMAKE_BUILD_TYPE LIBROBOX_GIT_REVISION
 )
