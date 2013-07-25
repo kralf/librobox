@@ -37,13 +37,13 @@ remake_distribute_deb(
   DISTRIBUTION lucid
   SECTION libs
   UPLOAD ppa:kralf/asl
-  DEPENDS remake tulibs-dev doxygen
+  DEPENDS tulibs-dev remake pkg-config doxygen
   PASS CMAKE_BUILD_TYPE LIBROBOX_GIT_REVISION
 )
 remake_distribute_deb(
   DISTRIBUTION precise
   SECTION libs
   UPLOAD ppa:kralf/asl
-  DEPENDS remake tulibs-dev doxygen
+  DEPENDS tulibs-dev remake pkg-config doxygen
   PASS CMAKE_BUILD_TYPE LIBROBOX_GIT_REVISION
 )
