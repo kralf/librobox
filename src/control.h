@@ -25,11 +25,14 @@
 #include "motors.h"
 #include "drive.h"
 
-/** \brief Predefined RoboX control error codes
+/** \name Error Codes 
+  * \brief Predefined RoboX control error codes
   */
+//@{
 #define ROBOX_CONTROL_ERROR_NONE                 0
 #define ROBOX_CONTROL_ERROR_START                1
 #define ROBOX_CONTROL_ERROR_ITERATE              2
+//@}
 
 /** \brief Structure defining the RoboX velocity control
   */

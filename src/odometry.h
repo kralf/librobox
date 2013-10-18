@@ -24,11 +24,14 @@
 #include "encoders.h"
 #include "drive.h"
 
-/** \brief Predefined RoboX odometry error codes
+/** \name Error Codes
+  * \brief Predefined RoboX odometry error codes
   */
+//@{
 #define ROBOX_ODOMETRY_ERROR_NONE                 0
 #define ROBOX_ODOMETRY_ERROR_START                1
 #define ROBOX_ODOMETRY_ERROR_INTEGRATE            2
+//@}
 
 /** \brief Structure defining the RoboX odometry
   */

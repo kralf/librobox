@@ -23,14 +23,20 @@
 
 #include "device.h"
 
-/** \brief Predefined RoboX power constants
+/** \name Constants
+  * \brief Predefined RoboX power constants
   */
+//@{
 #define ROBOX_POWER_READ_TIMEOUT               0.01
+//@}
 
-/** \brief Predefined RoboX power error codes
+/** \name Error Codes
+  * \brief Predefined RoboX power error codes
   */
+//@{
 #define ROBOX_POWER_ERROR_NONE                 0
 #define ROBOX_POWER_ERROR_UP                   1
+//@}
 
 /** \brief Structure defining the RoboX power module
   */

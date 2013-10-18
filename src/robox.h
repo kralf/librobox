@@ -35,12 +35,14 @@
 #include "odometry.h"
 #include "control.h"
 
-/** \brief Predefined RoboX constants
+/** \brief Predefined RoboX argument prefix
   */
-#define ROBOX_CONFIG_ARG_PREFIX                   "--robox-"
+#define ROBOX_ARG_PREFIX                          "--robox-"
 
-#define ROBOX_PARAMETER_MODEL                     "model"
-
+/** \name Parameters
+  * \brief Predefined RoboX parameters
+  */
+//@{
 #define ROBOX_PARAMETER_SECURITY_ESTOP_DEV        "security-estop-dev"
 #define ROBOX_PARAMETER_SECURITY_SSTOP_DEV        "security-sstop-dev"
 #define ROBOX_PARAMETER_SECURITY_WATCHDOG_DEV     "security-watchdog-dev"
@@ -66,13 +68,24 @@
 #define ROBOX_PARAMETER_CONTROL_P_GAIN            "control-p-gain"
 #define ROBOX_PARAMETER_CONTROL_I_GAIN            "control-i-gain"
 #define ROBOX_PARAMETER_CONTROL_D_GAIN            "control-d-gain"
+//@}
 
-/** \brief Predefined RoboX error codes
+/** \name Constants
+  * \brief Predefined RoboX constants
   */
+//@{
+#define ROBOX_PARAMETER_MODEL                     "model"
+//@}
+
+/** \name Error Codes
+  * \brief Predefined RoboX error codes
+  */
+//@{
 #define ROBOX_ERROR_NONE                      0
 #define ROBOX_ERROR_INIT                      1
 #define ROBOX_ERROR_START                     2
 #define ROBOX_ERROR_RESET                     3
+//@}
 
 /** \brief Predefined RoboX error descriptions
   */

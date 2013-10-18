@@ -23,11 +23,13 @@
 
 #include "device.h"
 
-/** \brief Predefined RoboX encoder constants
+/** \name Constants
+  * \brief Predefined RoboX encoder constants
   */
+//@{
 #define ROBOX_ENCODERS_READ_TIMEOUT               0.01
-
 #define ROBOX_ENCODERS_MAX_VALUE                  0x00FFFFFF
+//@}
 
 /** \brief Structure defining the RoboX encoders
   */

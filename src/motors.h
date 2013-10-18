@@ -23,19 +23,24 @@
 
 #include "device.h"
 
-/** \brief Predefined RoboX motor constants
+/** \name Constants
+  * \brief Predefined RoboX motor constants
   */
+//@{
 #define ROBOX_MOTORS_READ_TIMEOUT               0.01
-
 #define ROBOX_MOTORS_MIN_CURRENT                0.0
 #define ROBOX_MOTORS_ZERO_CURRENT               2048.0
 #define ROBOX_MOTORS_MAX_CURRENT                4095.0
+//@}
 
-/** \brief Predefined RoboX motor error codes
+/** \name Error Codes
+  * \brief Predefined RoboX motor error codes
   */
+//@{
 #define ROBOX_MOTORS_ERROR_NONE                 0
 #define ROBOX_MOTORS_ERROR_START                1
 #define ROBOX_MOTORS_ERROR_STOP                 2
+//@}
 
 /** \brief Structure defining the RoboX motors
   */

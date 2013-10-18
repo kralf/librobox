@@ -23,17 +23,23 @@
 
 #include "bumper.h"
 
-/** \brief Predefined RoboX security constants
+/** \name Constants
+  * \brief Predefined RoboX security constants
   */
+//@{
 #define ROBOX_SECURITY_READ_TIMEOUT               0.01
+//@}
 
-/** \brief Predefined RoboX security error codes
+/** \name Error Codes
+  * \brief Predefined RoboX security error codes
   */
+//@{
 #define ROBOX_SECURITY_ERROR_NONE                 0
 #define ROBOX_SECURITY_ERROR_START                1
 #define ROBOX_SECURITY_ERROR_ESTOP                2
 #define ROBOX_SECURITY_ERROR_SUPERVISOR           3
 #define ROBOX_SECURITY_ERROR_BUMPER_STATE         4
+//@}
 
 /** \brief Structure defining the RoboX security module
   */

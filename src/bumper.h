@@ -23,9 +23,12 @@
 
 #include "device.h"
 
-/** \brief Predefined RoboX bumper constants
+/** \name Constants 
+  * \brief Predefined RoboX bumper constants
   */
+//@{
 #define ROBOX_BUMPER_READ_TIMEOUT               0.01
+//@}
 
 /** \brief Bumper state enumeratable type
   */

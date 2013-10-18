@@ -23,9 +23,12 @@
 
 #include "device.h"
 
-/** \brief Predefined RoboX sensor constants
+/** \name Constants
+  * \brief Predefined RoboX sensor constants
   */
+//@{
 #define ROBOX_SENSORS_READ_TIMEOUT               0.01
+//@}
 
 /** \brief Structure defining the RoboX encoders
   */

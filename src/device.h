@@ -23,14 +23,17 @@
 
 #include <unistd.h>
 
-/** \brief Predefined RoboX device error codes
+/** \name Error Codes
+  * \brief Predefined RoboX device error codes
   */
+//@{
 #define ROBOX_DEVICE_ERROR_NONE                  0
 #define ROBOX_DEVICE_ERROR_OPEN                  1
 #define ROBOX_DEVICE_ERROR_CLOSE                 2
 #define ROBOX_DEVICE_ERROR_TIMEOUT               5
 #define ROBOX_DEVICE_ERROR_READ                  3
 #define ROBOX_DEVICE_ERROR_WRITE                 4
+//@}
 
 /** \brief Device type enumeratable type
   */
