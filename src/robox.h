@@ -21,8 +21,8 @@
 #ifndef ROBOX_H
 #define ROBOX_H
 
-#include <tulibs/config.h>
-#include <tulibs/thread.h>
+#include <config/config.h>
+#include <thread/thread.h>
 
 #include "security.h"
 #include "power.h"
@@ -93,7 +93,7 @@ extern const char* robox_errors[];
 
 /** \brief Predefined RoboX default configuration
   */
-extern config_t robox_default_config;
+extern const config_default_t robox_default_config;
 
 /** \brief RoboX model enumeratable type
   */
@@ -137,7 +137,7 @@ typedef struct robox_robot_t {
   */
 int robox_init(
   robox_robot_p robot,
-  config_p config);
+  const config_t* config);
 
 /** \brief Destroy robot
   * \param[in] robot The robot to be destroyed.

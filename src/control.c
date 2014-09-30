@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <tulibs/timer.h>
+#include <timer/timer.h>
 
 #include "control.h"
 

@@ -1,3 +1,9 @@
+librobox (0.1-65) lucid; urgency=low
+
+  * Adaptations to revised tulibs API
+
+ -- Ralf Kaestner <ralf.kaestner@gmail.com>  Tue, 30 Sep 2014 11:23:00 +0100
+ 
 librobox (0.1-64) lucid; urgency=low
 
   * Release distribution for Ubuntu Trusty Tahr
