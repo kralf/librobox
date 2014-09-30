@@ -1,3 +1,9 @@
+librobox (0.1-66) lucid; urgency=low
+
+  * Fixed included headers for trusty build
+
+ -- Ralf Kaestner <ralf.kaestner@gmail.com>  Tue, 30 Sep 2014 11:28:00 +0100
+ 
 librobox (0.1-65) lucid; urgency=low
 
   * Adaptations to revised tulibs API
